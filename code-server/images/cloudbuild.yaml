@@ -1,0 +1,92 @@
+# Copyright 2019 Google Inc. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+timeout: 3600s
+options:
+  machineType: "N1_HIGHCPU_32"
+  diskSizeGb: "512"
+
+substitutions:
+  _USE_CACHE: "true"
+  _IMAGE_PREFIX: code-server-gke
+  _IMAGE_TAG: latest
+
+###
+# Images to be pushed
+###
+images: [
+    # Code Server Cloudshell 
+    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-code-server-cloudshell:${_IMAGE_TAG}',
+    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-code-server-cloudshell:latest',
+    # tinyfilemanager
+    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-tinyfilemanager:${_IMAGE_TAG}',
+    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-tinyfilemanager:latest',
+]
+
+steps:
+###
+# Code Server Cloud Shell image
+###
+- name: 'gcr.io/cloud-builders/docker'
+  id: code-server-cloudshell-pull
+  entrypoint: 'bash'
+  args: ["-c", "if [[ '${_USE_CACHE}' == 'true' ]]; then (docker pull gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-code-server-cloudshell:latest || exit 0); fi"]
+  waitFor: ["-"]
+- name: 'gcr.io/cloud-builders/docker'
+  id: code-server-cloudshell
+  args: [
+            'build',
+            '-t', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-code-server-cloudshell:${_IMAGE_TAG}',
+            '--cache-from', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-code-server-cloudshell:latest',
+            'code-server-cloudshell'
+        ]
+  waitFor:
+    - code-server-cloudshell-pull
+- name: 'gcr.io/cloud-builders/docker'
+  id: code-server-cloudshell-tags
+  args: [
+            'tag',
+            'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-code-server-cloudshell:${_IMAGE_TAG}',
+            'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-code-server-cloudshell:latest',
+        ]
+  waitFor:
+    - code-server-cloudshell
+
+###
+# tinyfilemanager image
+###
+- name: 'gcr.io/cloud-builders/docker'
+  id: tinyfilemanager-pull
+  entrypoint: 'bash'
+  args: ["-c", "if [[ '${_USE_CACHE}' == 'true' ]]; then (docker pull gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-tinyfilemanager:latest || exit 0); fi"]
+  waitFor: ["-"]
+- name: 'gcr.io/cloud-builders/docker'
+  id: tinyfilemanager
+  args: [
+            'build',
+            '-t', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-tinyfilemanager:${_IMAGE_TAG}',
+            '--cache-from', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-tinyfilemanager:latest',
+            'tinyfilemanager'
+        ]
+  waitFor:
+    - tinyfilemanager-pull
+- name: 'gcr.io/cloud-builders/docker'
+  id: tinyfilemanager-tags
+  args: [
+            'tag',
+            'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-tinyfilemanager:${_IMAGE_TAG}',
+            'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-tinyfilemanager:latest',
+        ]
+  waitFor:
+    - tinyfilemanager
