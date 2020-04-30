@@ -13,24 +13,25 @@
 # limitations under the License.
 
 substitutions:
+  _ACTION: apply
+  _NAME: broker
   _REGION: us-west1
 
 steps:
   ###
   # Deploy manifests to cluster.
   ###
-  - name: "gcr.io/${PROJECT_ID}/broker-installer"
+  - name: "gcr.io/cloud-builders/kubectl"
     id: deploy-manifests
-    entrypoint: "bash"
+    entrypoint: bash
     args:
-      - "-exc"
+      - -exc
       - |
-        gcloud container clusters get-credentials $${CLOUDSDK_CONTAINER_CLUSTER} --region=$${CLOUDSDK_COMPUTE_REGION}
-
-        kubectl kustomize . | sed 's/$${PROJECT_ID}/'${PROJECT_ID}'/g' | \
-          kubectl apply -f -
+        kubectl kustomize . | sed \
+          -e 's/$${PROJECT_ID}/${PROJECT_ID}/g' \
+          -e 's/$${REGION}/'${_REGION}'/g' \
+          | /builder/kubectl.bash ${_ACTION} -f -
     env:
-      - "PROJECT_ID=${PROJECT_ID}"
       - "CLOUDSDK_CORE_PROJECT=${PROJECT_ID}"
       - "CLOUDSDK_COMPUTE_REGION=${_REGION}"
-      - "CLOUDSDK_CONTAINER_CLUSTER=broker-${_REGION}"
+      - "CLOUDSDK_CONTAINER_CLUSTER=${_NAME}-${_REGION}"

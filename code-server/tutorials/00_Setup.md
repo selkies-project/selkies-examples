@@ -24,24 +24,37 @@ This tutorial requires that you have already deployed the Kubernetes App Launche
 
 If you have not already deployed the operator, follow this Cloud Shell tutorial to do so:
 
-[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/GoogleCloudPlatform/k8s-stateful-workload-operator&cloudshell_git_branch=v1.0.0&cloudshell_tutorial=setup/README.md)
+[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/GoogleCloudPlatform/solutions-k8s-stateful-workload-operator&cloudshell_git_branch=v1.0.0&cloudshell_tutorial=setup/README.md)
 
 ## Setup
 
 1. Clone the source repo and change to the examples directory:
 
 ```bash
-git clone https://github.com/GoogleCloudPlatform/k8s-stateful-workload-operator-examples.git
+git clone https://github.com/GoogleCloudPlatform/solutions-k8s-stateful-workload-operator-examples.git && \
+  cd solutions-k8s-stateful-workload-operator-examples/code-server
+```
+
+2. Set the project, replace `YOUR_PROJECT` with your project ID:
+
+```bash
+export PROJECT_ID=YOUR_PROJECT
 ```
 
 ```bash
-cd k8s-stateful-workload-operator-examples/code-server
+gcloud config set project ${PROJECT_ID?}
 ```
 
-2. Obtain cluster credentials for the cluster in us-west1:
+3. Obtain cluster credentials:
 
 ```bash
-gcloud --project ${PROJECT} container clusters get-credentials broker-us-west1 --region us-west1
+REGION=us-west1
+```
+
+> NOTE: change this to the region of your cluster.
+
+```bash
+gcloud container clusters get-credentials broker-${REGION?} --region ${REGION?}
 ```
 
 ## DNS record with Cloud Endpoints
@@ -49,7 +62,7 @@ gcloud --project ${PROJECT} container clusters get-credentials broker-us-west1 -
 1. Obtain the broker ingress IP:
 
 ```bash
-export EXTERNAL_IP=$(dig +short broker.endpoints.${PROJECT?}.cloud.goog)
+export EXTERNAL_IP=$(dig +short broker.endpoints.${PROJECT_ID?}.cloud.goog)
 ```
 
 2. Create cloud endpoint DNS record that points to the broker ingress IP:
@@ -61,44 +74,36 @@ export EXTERNAL_IP=$(dig +short broker.endpoints.${PROJECT?}.cloud.goog)
 3. Create cloud endpoint DNS records for the port-forward capability:
 
 ```bash
-for port in 3000 8000 8080; do ./scripts/create_cloudep.sh code-port-${port} $EXTERNAL_IP; done
+for port in 3000 8000 8080; do ./scripts/create_cloudep.sh code-port-${port} ${EXTERNAL_IP}; done
 ```
 
 ## Update Load Balancer Certificates
 
-1. Create a `lb-domains.auto.tfvars` file with the new managed cert domain names:
+1. Create a new Secret Manager secret containing the list of additional managed domains:
 
-```
-cat - | tee lb-domains.auto.tfvars <<EOF
+```bash
+gcloud secrets create broker-tfvars-lb-domains --replication-policy=automatic --data-file - <<EOF
 additional_ssl_certificate_domains = [
-    "code.endpoints.${PROJECT?}.cloud.goog",
-    "code-port-3000.endpoints.${PROJECT?}.cloud.goog.",
-    "code-port-8000.endpoints.${PROJECT?}.cloud.goog.",
-    "code-port-8080.endpoints.${PROJECT?}.cloud.goog.",
+    "code.endpoints.${PROJECT_ID?}.cloud.goog",
+    "code-port-3000.endpoints.${PROJECT_ID?}.cloud.goog.",
+    "code-port-8000.endpoints.${PROJECT_ID?}.cloud.goog.",
+    "code-port-8080.endpoints.${PROJECT_ID?}.cloud.goog.",
 ]
 EOF
 ```
 
-2. Move this new file to the infrastructure repo:
+2. Show Terraform plan for the infrastructure changes:
 
 ```bash
-mv lb-domains.auto.tfvars ~/k8s-stateful-workload-operator/setup/infra/
-```
-
-> NOTE: this assumes the location of the the repo from the pre-requisites. 
-
-3. Show Terraform plan for the infrastructure changes:
-
-```bash
-(cd ~/k8s-stateful-workload-operator/setup/infra/ && gcloud builds submit --substitutions=_ACTION=plan)
+(cd ~/solutions-k8s-stateful-workload-operator/setup/infra/ && gcloud builds submit --substitutions=_ACTION=plan)
 ```
 
 > NOTE: verify that only the new managed certs will be created and the ssl_certificates on the target https proxy will be updated.
 
-4. Apply the Terraform plan:
+3. Apply the Terraform plan:
 
 ```bash
-(cd ~/k8s-stateful-workload-operator/setup/infra/ && gcloud builds submit)
+(cd ~/solutions-k8s-stateful-workload-operator/setup/infra/ && gcloud builds submit)
 ```
 
 > NOTE: it may take several minutes for the managed certificates on the load balancer to update. This can be monitored from the Cloud Console.
@@ -108,20 +113,18 @@ mv lb-domains.auto.tfvars ~/k8s-stateful-workload-operator/setup/infra/
 1. Build the images using Cloud Build:
 
 ```bash
-(cd images && gcloud --project ${PROJECT?} builds submit)
+(cd images && gcloud builds submit)
 ```
 
 > NOTE: this will take 10-15 minutes to complete.
 
 ## Deploy manifests
 
-1. Deploy the manifests to the us-west1 cluster using Cloud Build:
+1. Deploy the manifests to the cluster using Cloud Build:
 
 ```bash
-gcloud builds submit --substitutions=_REGION=us-west1
+gcloud builds submit --substitutions=_REGION=${REGION?}
 ```
-
-> NOTE: change the value of _REGION to target a different region.
 
 2. Open the app launcher web interface to launch Code Server.
 
@@ -132,5 +135,5 @@ gcloud builds submit --substitutions=_REGION=us-west1
 Open the next Cloud Shell Tutorial: __Developer Workflow__:
 
 ```bash
-teachme ~/k8s-stateful-workload-operator-examples/tutorials/01_Developer_Workflow.md
+teachme ~/solutions-k8s-stateful-workload-operator-examples/tutorials/01_Developer_Workflow.md
 ```
