@@ -12,11 +12,11 @@ This tutorial will walk you through the following:
 1. Set the project, replace `YOUR_PROJECT` with your project ID:
 
 ```bash
-export PROJECT=YOUR_PROJECT
+export PROJECT_ID=YOUR_PROJECT
 ```
 
 ```bash
-gcloud config set project ${PROJECT}
+gcloud config set project ${PROJECT_ID?}
 ```
 
 ## Pre-requisites
@@ -25,26 +25,32 @@ This tutorial requires that you have already deployed the Kubernetes App Launche
 
 If you have not already deployed the operator, follow this Cloud Shell tutorial to do so:
 
-[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/GoogleCloudPlatform/k8s-stateful-workload-operator&cloudshell_git_branch=v1.0.0&cloudshell_tutorial=setup/README.md)
+[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/GoogleCloudPlatform/solutions-k8s-stateful-workload-operator&cloudshell_git_branch=v1.0.0&cloudshell_tutorial=setup/README.md)
 
 This tutorial requires that you have deployed the WebRTC streaming app launcher stack to the cluster.
 
 If you have not installed the WebRTC stack, follow this Cloud Shell tutorial to do so:
 
-[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/GoogleCloudPlatform/webrtc-gpu-streaming&cloudshell_git_branch=v1.0.0&&cloudshell_tutorial=tutorials/gke/00_Setup.md). 
+[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/GoogleCloudPlatform/solutions-webrtc-gpu-streaming&cloudshell_git_branch=v1.0.0&&cloudshell_tutorial=tutorials/gke/00_Setup.md). 
 
 ## Platform verification
 
-1. Obtain cluster credentials for the cluster in us-west1:
+3. Obtain cluster credentials:
 
 ```bash
-gcloud --project ${PROJECT} container clusters get-credentials broker-us-west1 --region us-west1
+REGION=us-west1
+```
+
+> NOTE: change this to the region of your cluster.
+
+```bash
+gcloud --project ${PROJECT_ID?} container clusters get-credentials broker-${REGION?} --region ${REGION?}
 ```
 
 2. Verify that the WebRTC streaming manifest bundle is present:
 
 ```bash
-kubectl get configmap webrtc-gpu-streaming-manifests-1.0.0 -n default
+kubectl get configmap webrtc-gpu-streaming-manifests-1.4.0 -n pod-broker-system
 ```
 
 3. Verify that GPU sharing is enabled:
@@ -75,10 +81,8 @@ Example output:
 1. Deploy manifests to the cluster:
 
 ```bash
-gcloud builds submit --substitutions=_REGION=us-west1
+gcloud builds submit --substitutions=_REGION=${REGION?}
 ```
-
-> NOTE: change the value of _REGION to target a different region.
 
 2. Open the app launcher web interface and launch the app.
 
