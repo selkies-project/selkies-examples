@@ -178,13 +178,11 @@ The base code-server Cloud Shell image is built with support for [Xpra](http://x
 /usr/share/code-server/start-xpra.sh
 ```
 
-2. Open the port-8080 link in a new browser tab:
-
-```bash
-echo "Open: https://${CODE_SERVER_WEB_PREVIEW_8080}"
-```
+2. Open the link displayed in the script output.
 
 There is now an X11 server running on `:0`, any X11 programs you install and run will appear in the Xpra HTML5 client.
+
+The default desktop experience with Xpra uses xfdesktop. Right-click to access the app launcher menus.
 
 ## Installing Jetbrains Toolbox
 

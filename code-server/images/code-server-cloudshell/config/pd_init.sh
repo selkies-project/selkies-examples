@@ -19,6 +19,26 @@ set -x
 
 sudo /bin/chown 1000:1000 /home/coder
 
+# Create the .code_server_env file
+CODE_ENV=${HOME}/.code_server_env
+rm -f ${CODE_ENV} && touch ${CODE_ENV}
+echo "# NOTE: this file is generated automatically each time the code-server container is started. Do not modify" >> ${CODE_ENV}
+
+# Copy CODE_ env vars
+for e in $(env); do
+    if [[ "$e" =~ CODE_ ]]; then
+        echo "export $e" >> ${CODE_ENV}
+    fi
+done
+
+# Add helper aliases
+echo "alias install-cloud-code='/usr/share/code-server/install-cloud-code.sh'" >> ${CODE_ENV}
+echo "alias start-xpra='/usr/share/code-server/start-xpra.sh'" >> ${CODE_ENV}
+echo "alias stop-xpra='/usr/share/code-server/stop-xpra.sh'" >> ${CODE_ENV}
+
+sudo chown 1000:1000 ${CODE_ENV}
+echo "wrote ${CODE_ENV}"
+
 if [[ -f ${HOME}/.local/share/cloudshell/home_init_complete ]]; then
     echo "persistent directory already initialized."
     exit 0

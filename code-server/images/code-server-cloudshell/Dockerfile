@@ -20,10 +20,6 @@ FROM gcr.io/cloudshell-images/cloudshell:latest
 COPY --from=code-server /usr/local/lib/code-server /usr/local/lib/code-server
 RUN ln -s /usr/local/lib/code-server/code-server /usr/local/bin/code-server
 
-# Copy shared config files
-WORKDIR /usr/share/code-server
-COPY config/* ./
-
 # Install additional tools
 RUN apt-get install -y \
     bsdtar \
@@ -35,18 +31,28 @@ RUN curl -o ffmpeg-xpra.deb -L https://www.xpra.org/dists/stretch/main/binary-am
     gdebi -n ffmpeg-xpra.deb && \
     rm -f ffmpeg-xpra.deb
 
-# Install xpra and xterm
+# Install xpra, xephyr and xfce4
 RUN curl -sfL https://xpra.org/repos/stretch/xpra.list | tee /etc/apt/sources.list.d/xpra-beta.list && \
 	curl -sfL https://xpra.org/gpg.asc | apt-key add - && \
     apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
         xpra \
-        xterm
+        xterm \
+        xfce4 \
+        xfce4-terminal
+
+# Install mesa software GLX
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        mesa-utils
 
 # Install Chrome browser
 RUN curl -sfL https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add - && \
     curl -sfLO https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
     sudo gdebi -n google-chrome-stable_current_amd64.deb && \
     sudo ln -s /opt/google/chrome/chrome /usr/local/bin/chrome
+
+# Copy shared config files
+WORKDIR /usr/share/code-server
+COPY config/* ./
 
 # Download git-prompt to use as default prompt.
 RUN curl -sfL -o /usr/share/code-server/git-prompt.sh \
@@ -58,6 +64,8 @@ RUN adduser --gecos '' --disabled-password --shell /bin/bash coder && \
 
 WORKDIR /home/coder/project
 
+RUN chown coder:coder /home/coder -R
+
 USER coder
 
 # Prevent zombie python processes whenever gcloud is run.
@@ -68,4 +76,4 @@ ENV SHELL /bin/bash
 ENV USER coder
 ENV DISPLAY :0
 
-ENTRYPOINT ["/usr/local/bin/code-server", "--auth=none", "--port", "3180"]
+ENTRYPOINT ["/usr/local/bin/code-server", "--auth=none", "--host=0.0.0.0", "--port", "3180", "--disable-updates"]

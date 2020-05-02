@@ -23,3 +23,5 @@ export DOCKER_CERT_PATH="/var/run/docker-certs"
 # Default to use git-prompt as PS1
 source /usr/share/code-server/git-prompt.sh
 PS1='[\u@\W$(__git_ps1 " (%s)")]\$ '
+
+[[ -f ${HOME}/.code_server_env ]] && source ${HOME}/.code_server_env

@@ -24,6 +24,7 @@ generatorOptions:
 configMapGenerator:
   - name: code-server-manifests-1.2.0
     files:
+      - bundle-manifests/jsonpatch-deploy-code-pvc.yaml.tmpl
       - bundle-manifests/patch-user-pod.yaml.tmpl
       - bundle-manifests/resource-code-service.yaml
       - bundle-manifests/resource-code-serviceaccount.yaml

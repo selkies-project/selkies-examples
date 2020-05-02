@@ -29,7 +29,11 @@ spec:
   serviceName: code
   defaultRepo: gcr.io/${PROJECT_ID}/code-server-gke-code-server-cloudshell
   defaultTag: "latest"
-  userParams: []
+  userParams:
+    - name: enablePersistence
+      type: bool
+      displayName: "Persistent home directory"
+      default: "true"
   appParams:
     - name: Domain
       default: code.endpoints.${PROJECT_ID}.cloud.goog

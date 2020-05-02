@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # Copyright 2019 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,13 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-export XPRA="tcp://127.0.0.1:8080"
-
-echo "INFO: Shutting down Xpra"
-
-timeout 1 xpra info $XPRA >/dev/null 2>&1
-[[ $? -ne 0 ]] && echo "INFO: Xpra is not running." && exit 0
-
-xpra stop ${XPRA}
-
-echo "INFO: Xpra shutdown complete"
+{{- if .UserParams.enablePersistence}}
+{{- if eq .UserParams.enablePersistence "true"}}
+###
+# Add volume claim template
+###
+- op: add
+  path: "/spec/volumeClaimTemplates/-"
+  value:
+    metadata:
+      name: persist
+      annotations:
+        app.broker/user: "{{.User}}"
+    spec:
+      storageClassName: pd-ssd
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 50Gi
+###
+# Remove emptyDir volume
+###
+- op: remove
+  path: "/spec/template/spec/volumes/0"
+{{- end}}
+{{- end}}

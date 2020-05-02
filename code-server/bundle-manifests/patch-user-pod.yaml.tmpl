@@ -17,21 +17,6 @@ kind: StatefulSet
 metadata:
   name: code
 spec:
-  {{- if .UserParams.enablePersistence}}
-  {{- if eq .UserParams.enablePersistence "true"}}
-  volumeClaimTemplates:
-  - metadata:
-      name: persist
-      annotations:
-        app.broker/user: "{{.User}}"
-    spec:
-      storageClassName: pd-ssd
-      accessModes: [ "ReadWriteOnce" ]
-      resources:
-        requests:
-          storage: 50Gi
-  {{- end}}
-  {{- end}}
   template:
     spec:
       nodeSelector:
@@ -45,9 +30,8 @@ spec:
         - key: "app.broker/node-init"
           effect: "NoSchedule"
           operator: "Exists"
-      containers:
-      - name: code
-        image: {{.ImageRepo}}:{{.ImageTag}}
+      initContainers:
+      - name: persist-init
         env:
           - name: CODE_SERVER_DOMAIN
             value: "{{.AppParams.Domain}}"
@@ -57,6 +41,9 @@ spec:
             value: "{{.AppParams.WebPreview8000}}"
           - name: CODE_SERVER_WEB_PREVIEW_8080
             value: "{{.AppParams.WebPreview8080}}"
+      containers:
+      - name: code
+        image: {{.ImageRepo}}:{{.ImageTag}}
         resources:
           {{- if .NodeTier.Resources.Requests }}
           requests:

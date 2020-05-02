@@ -22,16 +22,7 @@ spec:
       app: code
   serviceName: code
   replicas: 1
-  volumeClaimTemplates:
-    - metadata:
-        name: persist
-      spec:
-        storageClassName: pd-ssd
-        volumeMode: Filesystem
-        accessModes: ["ReadWriteOnce"]
-        resources:
-          requests:
-            storage: 50Gi
+  volumeClaimTemplates: []
   template:
     metadata:
       labels:
@@ -41,6 +32,9 @@ spec:
       serviceAccountName: code
       enableServiceLinks: false
       volumes:
+        - name: persist
+          emptyDir:
+            sizeLimit: 10Gi
         - name: tmux
           emptyDir: {}
         - name: docker-certs
@@ -60,6 +54,7 @@ spec:
         - name: code
           image: gcr.io/cloud-solutions-images/code-server-gke-code-server-cloudshell:latest
           securityContext:
+            runAsUser: 1000
             privileged: false
           command:
             - /usr/local/bin/code-server
