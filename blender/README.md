@@ -1,6 +1,24 @@
 ## Blender 3D Demo
 
-This demo shows how to stream an instance of Blender 3D using the GKE WebRTC VDI stack.
+## Description
+
+This repository shows how to stream an instance of Blender 3D on Selkies using the GKE WebRTC VDI stack.
+
+## Dependencies
+
+- App Launcher: v1.0.0+
+- WebRTC Streaming Stack: v1.4.0+
+
+## Features
+
+- Blender 3D single application streaming experience.
+- GPU or software renderer per Node Tier selection.
+
+## Installed Software
+
+- Blender 3D
+
+## Tutorials
 
 This tutorial will walk you through the following:
 
