@@ -1,0 +1,121 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+timeout: 10800s
+substitutions:
+  _PACKER_VERSION: 1.5.1
+  _PACKER_VERSION_SHA256SUM: 3305ede8886bc3fd83ec0640fb87418cc2a702b2cb1567b48c8cb9315e80047d
+  _APPNAME: centos7-desktop
+  _PROVISION_ZONE: us-west1-a
+  _SOURCE_IMAGE_FAMILY: centos-7
+  _INSTALL_CORE: "true"
+  _INSTALL_WEBRTC: "true"
+  _BROKER_PROXY_IMAGE: "gcr.io/cloud-solutions-images/kube-pod-broker-gce-proxy:latest"
+  _GST_WEBRTC_IMAGE: "gcr.io/cloud-solutions-images/webrtc-gpu-streaming-gst-webrtc-app:v1.4.0"
+
+steps:
+  - name: gcr.io/cloud-builders/gcloud
+    id: packer-builder-clone
+    entrypoint: bash
+    args:
+      - -exc
+      - |
+        gcloud container images list --repository gcr.io/${PROJECT_ID} --filter=name~gcr.io/${PROJECT_ID}/packer --format='value(name)' > /workspace/packer_builder
+        [[ -s /workspace/packer_builder ]] && exit 0
+        git clone https://github.com/GoogleCloudPlatform/cloud-builders-community.git -b master --depth 1
+        cd cloud-builders-community/packer && curl -LO https://releases.hashicorp.com/packer/${_PACKER_VERSION}/packer_${_PACKER_VERSION}_linux_amd64.zip
+    waitFor: ["-"]
+  - name: gcr.io/cloud-builders/docker
+    id: packer-builder-build
+    entrypoint: bash
+    args:
+      - -exc
+      - |
+        [[ ! -d /workspace/cloud-builders-community/packer ]] && exit 0
+        cd /workspace/cloud-builders-community/packer
+        docker build -t gcr.io/${PROJECT_ID}/packer \
+          --build-arg PACKER_VERSION=${_PACKER_VERSION} \
+          --build-arg PACKER_VERSION_SHA256SUM=${_PACKER_VERSION_SHA256SUM} \
+        .
+        docker push gcr.io/${PROJECT_ID}/packer
+    waitFor:
+      - packer-builder-clone
+  - name: gcr.io/cloud-builders/gcloud
+    id: create-packer-spec
+    entrypoint: bash
+    args:
+      - "-ec"
+      - |
+        cat - > packer.json <<EOF
+        {
+          "builders": [
+              {
+                "type": "googlecompute",
+                "state_timeout": "30m",
+                "project_id": "${PROJECT_ID}",
+                "zone": "${_PROVISION_ZONE}",
+                "machine_type": "n1-standard-8",
+                "disk_size": "200",
+                "disk_type": "pd-ssd",
+                "source_image_family": "${_SOURCE_IMAGE_FAMILY}",
+                "image_name": "${_APPNAME}-{{timestamp}}",
+                "image_family": "${_APPNAME}",
+                "ssh_username": "packer",
+                "scopes": [
+                    "https://www.googleapis.com/auth/userinfo.email",
+                    "https://www.googleapis.com/auth/compute",
+                    "https://www.googleapis.com/auth/devstorage.full_control"
+                ],
+                "accelerator_type": "projects/${PROJECT_ID}/zones/${_PROVISION_ZONE}/acceleratorTypes/nvidia-tesla-t4",
+                "accelerator_count": 1,
+                "on_host_maintenance": "TERMINATE"
+              }
+          ],
+          "provisioners": [
+            {
+              "type": "shell",
+              "inline": ["mkdir -p /tmp/vdi_installer"]
+            },
+            {
+              "type": "file",
+              "source": "./scripts/",
+              "destination": "/tmp/vdi_installer/"
+            },
+            {
+              "type": "shell",
+              "inline": ["/tmp/vdi_installer/provisioner.sh"],
+              "execute_command": "sudo -S sh -c '{{ .Vars }} {{ .Path }}'",
+              "environment_vars": [
+                "PROJECT_ID=${PROJECT_ID}",
+                "INSTALL_CORE=${_INSTALL_CORE}",
+                "INSTALL_WEBRTC=${_INSTALL_WEBRTC}",
+                "BROKER_PROXY_IMAGE=${_BROKER_PROXY_IMAGE}",
+                "GST_WEBRTC_IMAGE=${_GST_WEBRTC_IMAGE}"
+              ]
+            }
+          ]
+        }
+        EOF
+    waitFor: ["-"]
+  - name: gcr.io/${PROJECT_ID}/packer
+    id: packer-build
+    args:
+      - build
+      - -force
+      - -var
+      - project_id=${PROJECT_ID}
+      - packer.json
+    waitFor:
+      - packer-builder-build
+      - create-packer-spec

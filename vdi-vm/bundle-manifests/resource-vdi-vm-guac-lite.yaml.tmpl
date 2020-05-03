@@ -1,0 +1,153 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+{{- if eq .AppParams.instanceOS "windows"}}
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: vm
+spec:
+  selector:
+    app: vm
+  ports:
+    # Port 80 is the default port routed by the pod broker.
+    - port: 80
+      name: web
+      targetPort: 80
+    # guacamole-lite websocket service
+    - port: 8080
+      name: guac-lite
+      targetPort: 8080
+    # guacamole-lite-token service
+    - port: 8081
+      name: token
+      targetPort: 8081
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: vm
+spec:
+  selector:
+    matchLabels:
+      app: vm
+  serviceName: vm
+  replicas: 1
+  volumeClaimTemplates: []
+  template:
+    metadata:
+      labels:
+        app: vm
+    spec:
+      # Disable service account used for accessing the kubernetes API/
+      automountServiceAccountToken: false
+
+      # Terminate pod after 10 seconds of receiving SIGTERM
+      terminationGracePeriodSeconds: 5
+      containers:
+        ###
+        # Guacd container
+        ###
+        - name: guacd
+          image: guacamole/guacd:1.1.0
+          ports:
+            - name: guacd
+              containerPort: 4822
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 100m
+        ###
+        # Guacamole lite container
+        ###
+        - name: guacamole-lite
+          image: gcr.io/cloud-solutions-images/vdi-vm-guacamole-lite:latest
+          securityContext:
+            privileged: false
+          env:
+            - name: GUACD_HOST
+              value: "localhost"
+            - name: GUACD_SECRET_KEY
+              value: "{{.CookieValue | sha256sum | trunc 32}}"
+          resources:
+            requests:
+              cpu: 500m
+          ports:
+            - name: guac-lite
+              containerPort: 8080
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+              scheme: HTTP
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+        ###
+        # Guacamole lite token container
+        ###
+        - name: guacamole-lite-token
+          image: gcr.io/cloud-solutions-images/vdi-vm-guacamole-lite-token:latest
+          securityContext:
+            privileged: false
+          env:
+            - name: GUACD_HOST
+              value: "localhost"
+            - name: GUACD_SECRET_KEY
+              value: "{{.CookieValue | sha256sum | trunc 32}}"
+            - name: WSS_HOSTPATH
+              value: "wss://{{.SysParams.Domain}}/{{.App}}/ws/"
+          resources:
+            requests:
+              cpu: 500m
+          ports:
+            - name: token
+              containerPort: 8081
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8081
+              scheme: HTTP
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8081
+        ###
+        # Guacamole lite web container
+        ###
+        - name: guacamole-lite-web
+          image: gcr.io/cloud-solutions-images/vdi-vm-guacamole-lite-web:latest
+          securityContext:
+            privileged: false
+          env:
+            - name: GUACD_HOST
+              value: "localhost"
+          resources:
+            requests:
+              cpu: 500m
+          ports:
+            - name: web
+              containerPort: 80
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+              scheme: HTTP
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+{{- end}}

@@ -1,0 +1,78 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: gcp.solutions/v1
+kind: BrokerAppConfig
+metadata:
+  name: centos7
+spec:
+  version: 1.0.0
+  name: centos7
+  displayName: CentOS 7 with WebRTC
+  description: centos7-standard-4 template in project ${PROJECT_ID}
+  icon: https://upload.wikimedia.org/wikipedia/commons/6/63/CentOS_color_logo.svg
+  bundle:
+    configMapRef:
+      name: vdi-vm-manifests-1.0.0
+  serviceName: vm
+  defaultRepo: gcr.io/${PROJECT_ID}/vdi-vm-controller
+  defaultTag: "latest"
+  appParams:
+    # Name of the pre-created instance template.
+    - name: instanceTemplate
+      default: "centos7-standard-4-${REGION}-v000"
+    # Project to create instance in
+    - name: instanceProject
+      default: ${PROJECT_ID}
+    # Zone to create instance in
+    - name: instanceZone
+      default: ${REGION}-a
+    # OS flavor, linux or windows
+    - name: instanceOS
+      default: linux
+    - name: idleShutdownTimeout
+      default: "600" # seconds
+  images:
+    controller:
+      oldRepo: gcr.io/cloud-solutions-images/vdi-vm-controller
+      newRepo: gcr.io/${PROJECT_ID}/vdi-vm-controller
+      newTag: latest
+    signaling:
+      oldRepo: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-signaling
+      newRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-signaling
+      newTag: latest
+    gst-web:
+      oldRepo: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-gst-web
+      newRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-gst-web
+      newTag: latest
+  userParams:
+    - name: enableAudio
+      displayName: "Audio"
+      type: bool
+      default: "false"
+    - name: idleShutdown
+      displayName: "Idle Shutdown"
+      type: bool
+      default: "true"
+  shutdownHooks:
+    - selector: "app=vm-controller"
+      container: "controller"
+      command: "bash /run/vdi/shutdown_instance.sh"
+  defaultTier: standard
+  nodeTiers:
+    - name: standard
+      nodeLabel: tier1
+      resources:
+        requests:
+          cpu: 500m

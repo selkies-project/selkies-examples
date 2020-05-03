@@ -1,0 +1,194 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: vm-controller
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/instance: {{.FullName}}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/instance: {{.FullName}}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{.ServiceName}}-controller
+  labels:
+    app: {{.ServiceName}}-controller
+  annotations:
+    iam.gke.io/gcp-service-account: vdi-vm-controller@{{.ProjectID}}.iam.gserviceaccount.com
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: vm-controller
+  labels:
+    app: vm-controller
+subjects:
+  - kind: ServiceAccount
+    name: {{.ServiceName}}-controller
+    namespace: {{.Namespace}}
+roleRef:
+  kind: Role
+  name: vm-controller
+  apiGroup: rbac.authorization.k8s.io
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: vm-controller
+  namespace: vm-controller-system
+  labels:
+    app: vm-controller
+rules:
+  - apiGroups: ["compute.cnrm.cloud.google.com"]
+    resources: ["*"]
+    verbs: ["*"]
+---
+apiVersion: iam.cnrm.cloud.google.com/v1beta1
+kind: IAMPolicyMember
+metadata:
+  name: {{.ServiceName}}-controller-wi
+  annotations:
+    cnrm.cloud.google.com/deletion-policy: "abandon"
+spec:
+  resourceRef:
+    apiVersion: iam.cnrm.cloud.google.com/v1beta1
+    kind: IAMServiceAccount
+    external: projects/{{.ProjectID}}/serviceAccounts/vdi-vm-controller@{{.ProjectID}}.iam.gserviceaccount.com
+  member: serviceAccount:{{.ProjectID}}.svc.id.goog[{{.Namespace}}/{{.FullName}}-vm-controller]
+  role: roles/iam.workloadIdentityUser
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vm-controller
+spec:
+  selector:
+    app: vm-controller
+  ports:
+    # Port 80 is the default port routed by the pod broker.
+    - port: 80
+      name: web
+      targetPort: 8080
+    # RDP tunnel for windows
+    - port: 3389
+      name: rdp
+      targetPort: 3389
+    # gotty tunnel for linux
+    - port: 9000
+      name: gotty
+      targetPort: 9000
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: vm-controller
+spec:
+  selector:
+    matchLabels:
+      app: vm-controller
+  serviceName: vm-controller
+  replicas: 1
+  volumeClaimTemplates: []
+  template:
+    metadata:
+      labels:
+        app: vm-controller
+    spec:
+      enableServiceLinks: false
+      nodeSelector:
+        # Node selector used to trigger autoscaling and assign pod to node.
+        app.broker/tier: {{ .NodeTier.NodeLabel }}
+        cloud.google.com/gke-nodepool: "{{ .NodeTier.NodeLabel }}"
+      # Schedule controller and web interface pod on the same node.
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app.kubernetes.io/instance
+                    operator: In
+                    values: ["{{.FullName}}"]
+              topologyKey: kubernetes.io/hostname
+      tolerations:
+        - key: "app.broker/tier"
+          effect: "NoSchedule"
+          operator: "Exists"
+        - key: "app.broker/node-init"
+          effect: "NoSchedule"
+          operator: "Exists"
+      serviceAccount: {{.FullName}}-vm-controller
+      terminationGracePeriodSeconds: 10
+      volumes:
+        - name: build
+          emptyDir:
+            medium: Memory
+      containers:
+        ###
+        # controller
+        ###
+        - name: controller
+          image: gcr.io/cloud-solutions-images/vdi-vm-controller:latest
+          env:
+            - name: INSTANCE_PROJECT
+              value: "{{.AppParams.instanceProject}}"
+            - name: INSTANCE_OS
+              value: "{{.AppParams.instanceOS}}"
+            - name: INSTANCE_NAME
+              value: "{{.FullName}}"
+            - name: INSTANCE_ZONE
+              value: "{{.AppParams.instanceZone}}"
+            - name: INSTANCE_TEMPLATE
+              value: "{{.AppParams.instanceTemplate}}"
+            - name: BROKER_DOMAIN
+              value: "{{.SysParams.Domain}}"
+            - name: BROKER_COOKIE
+              value: "{{.CookieValue}}"
+            - name: APP_NAME
+              value: "{{.App}}"
+            - name: VDI_USER
+              value: "{{.User}}"
+            # Add the userParams to the env prefixed with VDI_
+            {{- range $key, $value := .UserParams }}
+            - name: VDI_{{ $key }}
+              value: "{{ $value }}" 
+            {{- end}}
+            # Add environment vars from brokerappconfig spec.
+            {{- range $item := .AppSpec.AppEnv }}
+            - name: {{$item.Name}}
+              value: "{{$item.Value}}"
+            {{- end}}
+          ports:
+            - name: api
+              containerPort: 8080
+              protocol: TCP
+            - name: rdp
+              containerPort: 3389
+              protocol: TCP
+            - name: gotty
+              containerPort: 9000
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 100m
+

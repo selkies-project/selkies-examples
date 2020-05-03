@@ -1,0 +1,105 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+{{- if eq .AppParams.instanceOS "windows"}}
+
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: {{.ServiceName}}
+spec:
+  hosts:
+    - "*"
+  gateways:
+    - pod-broker-system/pod-broker-gateway
+  http:
+    ###
+    # rule for controller API
+    ###
+    - match:
+        - uri:
+            prefix: /{{.App}}/api/
+      rewrite:
+        uri: /api
+      route:
+        - destination:
+            host: {{.FullName}}-vm-controller
+            port:
+              number: 80   
+      websocketUpgrade: true
+    ###
+    # rule for guacamole-lite websocket
+    ###
+    - match:
+        - uri:
+            prefix: /{{.App}}/ws/
+      rewrite:
+        uri: /ws
+      route:
+        - destination:
+            host: {{.FullName}}-{{.ServiceName}}
+            port:
+              number: 8080    
+      websocketUpgrade: true
+    ###
+    # rule for guacamole-lite-token service
+    ###
+    - match:
+        - uri:
+            prefix: /{{.App}}/token/
+          headers:
+            cookie:
+              regex: ".*broker_{{.App}}={{.CookieValue}}.*"
+      rewrite:
+        uri: /
+      headers:
+        request:  
+          add:  
+            x-guacd-conn-type: "rdp"
+            x-guacd-setting-hostname: "{{.FullName}}-vm-controller"
+            x-guacd-setting-port: "3389"
+            x-guacd-setting-security: "any"
+            x-guacd-setting-ignore-cert: "true"
+            x-guacd-setting-enable-drive: "false"
+            x-guacd-setting-create-drive-path: "false"
+      route:
+        - destination:
+            host: {{.FullName}}-{{.ServiceName}}
+            port:
+              number: 8081
+    ###
+    # rule for guacamole html5 client
+    ###
+    - match:
+        - uri:
+            prefix: /{{.App}}/
+          headers:
+            cookie:
+              regex: ".*broker_{{.App}}={{.CookieValue}}.*"
+      rewrite:
+        uri: /
+      route:
+        - destination:
+            host: {{.FullName}}-{{.ServiceName}}
+            port:
+              number: 80
+    - match:
+        - uri:
+            prefix: /
+      route:
+        - destination:
+            host: pod-broker
+            port:
+              number: 80
+{{- end}}

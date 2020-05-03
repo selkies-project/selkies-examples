@@ -1,0 +1,13 @@
+{
+  "name": "guacamole-lite-web",
+  "version": "1.0.0",
+  "description": "",
+  "main": "",
+  "scripts": {},
+  "author": "disla@google.com",
+  "license": "Apache-2.0",
+  "dependencies": {},
+  "devDependencies": {
+    "http-proxy-cli": "^1.1.0"
+  }
+}

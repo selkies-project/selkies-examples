@@ -1,0 +1,15 @@
+{
+  "name": "guacamole-lite-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "author": "disla@google.com",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "guacamole-lite": "^0.6.2"
+  },
+  "devDependencies": {}
+}
