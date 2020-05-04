@@ -23,6 +23,12 @@ SCRIPT_DIR=$(dirname $(readlink -f $0 2>/dev/null) 2>/dev/null || echo "${PWD}/$
 [[ ${INSTALL_CORE:-"true"} == "true" ]] && ${SCRIPT_DIR}/install_desktop.sh
 [[ ${INSTALL_WEBRTC:-"true"} == "true" ]] && ${SCRIPT_DIR}/install_webrtc_centos7.sh
 
+# Set default groups for users created by GCE agent
+cat - | tee /etc/default/instance_configs.cfg.template <<EOF
+[Accounts]
+groups = adm,dip,docker,lxd,plugdev,video,tty,docker
+EOF
+
 # Install startup scripts.
 mkdir -p /opt/vdi
 cp ${SCRIPT_DIR}/{start_webrtc.sh,startx.sh} /opt/vdi/
