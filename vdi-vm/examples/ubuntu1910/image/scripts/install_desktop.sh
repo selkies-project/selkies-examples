@@ -17,6 +17,12 @@
 set -e
 set -x
 
+# Use GCE apt servers
+GCE_ZONE=$(curl -H Metadata-Flavor:Google http://metadata/computeMetadata/v1/instance/zone | cut -d/ -f4)
+GCE_REGION=${GCE_ZONE%-*}
+cp /etc/apt/sources.list /etc/apt/sources.list.orig && \
+    sed -i "s/archive.ubuntu.com/${GCE_REGION}.gce.archive.ubuntu.com/g" /etc/apt/sources.list
+
 apt-get update
 
 # Install the XFCE linux desktop environment and terminal emulator:
@@ -36,8 +42,9 @@ sed -i 's/enabled=1/enabled=0/g' /etc/default/apport
 # Install NVIDIA driver
 dpkg --add-architecture i386
 apt-get update
-apt-get install -y nvidia-driver-430 libnvidia-gl-430 libnvidia-gl-430:i386
+apt-get install -y nvidia-driver-440 libnvidia-gl-440 libnvidia-gl-440:i386
 apt-get install -y libvulkan1 libvulkan1:i386 vulkan-utils
+nvidia-xconfig
 
 # Set default boot to multi-user mode, to disable automatic startup of the X server
 systemctl set-default multi-user.target

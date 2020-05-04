@@ -7,7 +7,7 @@ Launches virtual machines for users on Selkies.
 ## Dependencies
 
 - App Launcher: v1.0.0+
-- WebRTC Streaming Stack: v1.4.0+
+- WebRTC Streaming Stack: v1.4.0+ (images only)
 
 ## Features
 
@@ -106,6 +106,26 @@ gserviceaccount.com && \
 
 ```bash
 (cd examples/win2k19 && gcloud builds submit --substitutions=_REGION=${REGION})
+```
+
+2. Open the App Launcher and launch the app.
+
+> NOTE: it will take about 2-3 minutes for the instance to start the first time and 1-2 minutes when resuming from shutdown.
+
+## Deploy CentOS 7 example
+
+1. Build the GCE image with GPU driver and pre-installed WebRTC stack:
+
+```bash
+(cd examples/centos7 && gcloud builds submit)
+```
+
+> NOTE: this step takes about 15-20 minutes to complete.
+
+2. Deploy the ComputeInstanceTemplate and BrokerAppConfig:
+
+```bash
+(cd examples/centos7 && gcloud builds submit --substitutions=_REGION=${REGION})
 ```
 
 2. Open the App Launcher and launch the app.

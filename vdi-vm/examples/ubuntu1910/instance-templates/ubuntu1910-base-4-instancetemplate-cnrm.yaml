@@ -15,18 +15,18 @@
 apiVersion: compute.cnrm.cloud.google.com/v1beta1
 kind: ComputeInstanceTemplate
 metadata:
-  name: ubuntu1910-standard-4-${REGION}-v000
+  name: ubuntu1910-base-4-${REGION}-v000
 spec:
   # Docs: https://cloud.google.com/config-connector/docs/reference/resources#computeinstancetemplate
 
-  description: ubuntu1910-standard-4 instance template
-  instanceDescription: ubuntu-standard-4 instance template
+  description: ubuntu1910-base-4 instance template
+  instanceDescription: ubuntu-base-4 instance template
   machineType: n1-standard-4
   minCpuPlatform: "Intel Skylake"
   region: ${REGION}
   disk:
     - sourceImageRef:
-        external: ${PROJECT_ID}/ubuntu-desktop
+        external: ubuntu-os-cloud/ubuntu-1910
       autoDelete: true
       boot: true
       diskType: pd-ssd

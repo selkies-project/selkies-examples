@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Copyright 2019 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,11 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
+[[ -n "$(pgrep -f $(command -v startx))" ]] && echo "INFO: startx is already running" && exit 0
 
-namespace: pod-broker-system
-
-resources:
-  - ubuntu1910-base-4-instancetemplate-cnrm.yaml
-  - ubuntu1910-standard-4-instancetemplate-cnrm.yaml
+sudo touch /var/lock/console.lock
+sudo mkdir -p /var/run/console
+sudo touch /var/run/console/${USER}
+nohup startx >${HOME}/.startx.log 2>&1 &
