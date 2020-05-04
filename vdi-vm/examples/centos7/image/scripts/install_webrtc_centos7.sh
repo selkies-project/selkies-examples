@@ -48,5 +48,6 @@ mkdir -p /usr/local/nvidia/cuda/lib64/
 rsync -rav /usr/local/cuda-10.1/lib64/* /usr/local/nvidia/cuda/lib64/
 
 # Pull docker images
-docker pull ${BROKER_PROXY_IMAGE:-"gcr.io/cloud-solutions-images/kube-pod-broker-gce-proxy:latest"}
-docker pull ${GST_WEBRTC_IMAGE:-"gcr.io/cloud-solutions-images/webrtc-gpu-streaming-gst-webrtc-app:v1.4.0"}
+gcloud -q auth configure-docker
+docker pull ${BROKER_PROXY_IMAGE?}
+docker pull ${GST_WEBRTC_IMAGE?}

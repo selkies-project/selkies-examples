@@ -22,8 +22,8 @@ substitutions:
   _SOURCE_IMAGE_FAMILY: centos-7
   _INSTALL_CORE: "true"
   _INSTALL_WEBRTC: "true"
-  _BROKER_PROXY_IMAGE: "gcr.io/cloud-solutions-images/kube-pod-broker-gce-proxy:latest"
-  _GST_WEBRTC_IMAGE: "gcr.io/cloud-solutions-images/webrtc-gpu-streaming-gst-webrtc-app:v1.4.0"
+  _BROKER_PROXY_IMAGE: "gcr.io/${PROJECT_ID}/kube-pod-broker-gce-proxy:latest"
+  _GST_WEBRTC_IMAGE: "gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-gst-webrtc-app:latest"
 
 steps:
   ###
@@ -61,6 +61,22 @@ steps:
       - packer-builder-clone
 
   ###
+  # Create service account used by instance during build
+  ###
+  - name: gcr.io/cloud-builders/gcloud
+    id: create-packer-service-account
+    entrypoint: bash
+    args:
+      - "-ec"
+      - |
+        [[ -n "$(gcloud -q iam service-accounts list --filter email~packer@${PROJECT_ID}.iam.gserviceaccount.com)" ]] && exit 0
+        gcloud -q iam service-accounts create packer --display-name "Packer"
+        gcloud -q projects add-iam-policy-binding ${PROJECT_ID} \
+          --member serviceAccount:packer@${PROJECT_ID}.iam.gserviceaccount.com \
+          --role roles/storage.admin
+    waitFor: ["-"]
+
+  ###
   # Create packer build spec
   ###
   - name: gcr.io/cloud-builders/gcloud
@@ -89,6 +105,7 @@ steps:
                     "https://www.googleapis.com/auth/compute",
                     "https://www.googleapis.com/auth/devstorage.full_control"
                 ],
+                "service_account_email": "packer@${PROJECT_ID}.iam.gserviceaccount.com",
                 "accelerator_type": "projects/${PROJECT_ID}/zones/${_PROVISION_ZONE}/acceleratorTypes/nvidia-tesla-t4",
                 "accelerator_count": 1,
                 "on_host_maintenance": "TERMINATE"
@@ -119,6 +136,8 @@ steps:
           ]
         }
         EOF
+    env:
+      - "PROJECT_ID=${PROJECT_ID}"
     waitFor: ["-"]
 
   ###
@@ -135,3 +154,4 @@ steps:
     waitFor:
       - packer-builder-build
       - create-packer-spec
+      - create-packer-service-account
