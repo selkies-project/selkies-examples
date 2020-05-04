@@ -22,7 +22,7 @@ echo "INFO: starting gotty"
 ${SCRIPT_DIR}/gotty -p 9000 -w bash >${HOME}/.gotty.log 2>&1 &
 
 echo "INFO: starting X session"
-[[ -f /usr/local/vdi/startx.sh ]] && bash /usr/local/vdi/startx.sh
+[[ -f /opt/vdi/startx.sh ]] && bash /opt/vdi/startx.sh
 
 echo "INFO: starting WebRTC"
-[[ -f /usr/local/vdi/start_webrtc.sh ]] && bash /usr/local/vdi/start_webrtc.sh
+[[ -f /opt/vdi/start_webrtc.sh ]] && bash /opt/vdi/start_webrtc.sh

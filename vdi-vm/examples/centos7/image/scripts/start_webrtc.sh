@@ -14,9 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Verify NVIDIA libraries are installed.
+NVIDIA_LIB_DIR=/usr/local/nvidia/lib64
+[[ ! -d "${NVIDIA_LIB_DIR}" ]] && echo "ERROR: failed to find NVIDIA lib directory: ${NVIDIA_LIB_DIR}" && exit 1
+
 # Verify CUDA libraries are installed.
-CUDA_DIR=/usr/local/cuda-10.1
-[[ ! -d "${CUDA_DIR}" ]] && echo "ERROR: failed to find cuda directory" && exit 1
+CUDA_LIB_DIR=/usr/local/nvidia/cuda/lib64
+[[ ! -d "${CUDA_LIB_DIR}" ]] && echo "ERROR: failed to find CUDA lib directory: ${CUDA_LIB_DIR}" && exit 1
 
 # Allow container to connect to X11 server.
 export DISPLAY=${DISPLAY:-":0"}
@@ -68,8 +72,7 @@ sudo docker run --name webrtc -d --restart=always \
     -e ENABLE_AUDIO="false" \
     -e PULSE_SERVER="/var/run/user/${UID}/pulse/native" \
     -v ${HOME}/.config/pulse:/root/.config/pulse \
-    -v /usr/local/nvidia/lib64:/usr/local/nvidia/lib64 \
-    -v ${CUDA_DIR?}:/usr/local/nvidia/cuda \
+    -v /usr/local/nvidia:/usr/local/nvidia \
     -v /usr/bin/nvidia-smi:/usr/bin/nvidia-smi \
     -v /tmp/.X11-unix:/tmp/.X11-unix \
     -v /var/run/user/${UID}/pulse:/var/run/user/${UID}/pulse \

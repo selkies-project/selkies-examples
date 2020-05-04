@@ -17,21 +17,28 @@
 set -e
 set -x
 
-# Install desktop
+# Install base packages
 yum -y update
-yum -y groupinstall "Development Tools"
-yum -y install kernel-devel
-yum -y groupinstall "KDE desktop" "X Window System" "Fonts"
-yum -y groupinstall "Server with GUI"
+yum -y groupinstall "Development Tools" "X Window System"
+yum -y install kernel-devel dkms
 
 # Install NVIDIA GRID driver
 gsutil cp gs://nvidia-drivers-us-public/GRID/GRID9.1/NVIDIA-Linux-x86_64-430.46-grid.run /tmp/
 sh /tmp/NVIDIA-Linux-x86_64-430.46-grid.run \
+  --dkms \
   --silent \
   --no-questions \
   --ui=none \
-  --install-libglvnd \
-  --run-nvidia-xconfig
+  --install-libglvnd
+
+# Install desktop
+yum -y groupinstall "Server with GUI" "Fonts"
+
+# Set default boot to multi-user mode, to disable automatic startup of the X server
+systemctl set-default multi-user.target
+
+# Configure X11 for NVIDIA
+nvidia-xconfig
 
 # Install the Cromium browser
 yum -y install chromium

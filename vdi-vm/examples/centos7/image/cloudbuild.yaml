@@ -18,6 +18,7 @@ substitutions:
   _PACKER_VERSION_SHA256SUM: 3305ede8886bc3fd83ec0640fb87418cc2a702b2cb1567b48c8cb9315e80047d
   _APPNAME: centos7-desktop
   _PROVISION_ZONE: us-west1-a
+  _PROVISION_MACHINE_TYPE: n1-standard-8
   _SOURCE_IMAGE_FAMILY: centos-7
   _INSTALL_CORE: "true"
   _INSTALL_WEBRTC: "true"
@@ -25,6 +26,9 @@ substitutions:
   _GST_WEBRTC_IMAGE: "gcr.io/cloud-solutions-images/webrtc-gpu-streaming-gst-webrtc-app:v1.4.0"
 
 steps:
+  ###
+  # Clone packer builder repo if builder does not exist
+  ###
   - name: gcr.io/cloud-builders/gcloud
     id: packer-builder-clone
     entrypoint: bash
@@ -36,6 +40,10 @@ steps:
         git clone https://github.com/GoogleCloudPlatform/cloud-builders-community.git -b master --depth 1
         cd cloud-builders-community/packer && curl -LO https://releases.hashicorp.com/packer/${_PACKER_VERSION}/packer_${_PACKER_VERSION}_linux_amd64.zip
     waitFor: ["-"]
+
+  ###
+  # Build packer builder if it has not been built yet.
+  ###
   - name: gcr.io/cloud-builders/docker
     id: packer-builder-build
     entrypoint: bash
@@ -51,13 +59,17 @@ steps:
         docker push gcr.io/${PROJECT_ID}/packer
     waitFor:
       - packer-builder-clone
+
+  ###
+  # Create packer build spec
+  ###
   - name: gcr.io/cloud-builders/gcloud
     id: create-packer-spec
     entrypoint: bash
     args:
       - "-ec"
       - |
-        cat - > packer.json <<EOF
+        cat - | tee packer.json <<EOF
         {
           "builders": [
               {
@@ -65,7 +77,7 @@ steps:
                 "state_timeout": "30m",
                 "project_id": "${PROJECT_ID}",
                 "zone": "${_PROVISION_ZONE}",
-                "machine_type": "n1-standard-8",
+                "machine_type": "${_PROVISION_MACHINE_TYPE}",
                 "disk_size": "200",
                 "disk_type": "pd-ssd",
                 "source_image_family": "${_SOURCE_IMAGE_FAMILY}",
@@ -95,7 +107,7 @@ steps:
             {
               "type": "shell",
               "inline": ["/tmp/vdi_installer/provisioner.sh"],
-              "execute_command": "sudo -S sh -c '{{ .Vars }} {{ .Path }}'",
+              "execute_command": "sudo -S bash -exc '{{ .Vars }} {{ .Path }}'",
               "environment_vars": [
                 "PROJECT_ID=${PROJECT_ID}",
                 "INSTALL_CORE=${_INSTALL_CORE}",
@@ -108,6 +120,10 @@ steps:
         }
         EOF
     waitFor: ["-"]
+
+  ###
+  # Run packer
+  ###
   - name: gcr.io/${PROJECT_ID}/packer
     id: packer-build
     args:

@@ -14,20 +14,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Create user
-(id vdi || (
-  groupadd --gid 2000 vdi && \
-  useradd --uid 2000 --gid 2000 --gecos '' --disabled-password --shell /bin/bash vdi && \
-  echo "vdi ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/nopasswd
-))
+set -e
+set -x
 
 # Install docker CE
-yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo && \
-  yum install -y docker-ce docker-ce-cli containerd.io
+yum install -y yum-utils
+yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+yum install -y docker-ce docker-ce-cli containerd.io
 
-systemctl enable docker && \
-  systemctl start docker && \
-  usermod -a -G docker vdi
+systemctl enable docker
+systemctl start docker
 
 # The container image is not driver specific and requires that the NVIDIA
 # libraries are present at runtime. Create directory on host containing
@@ -35,18 +31,21 @@ systemctl enable docker && \
 mkdir -p /usr/local/nvidia/lib64
 
 # Copy NVIDIA libraries to /usr/local/nvidia/lib64/
-NVIDIA_LIB_DIR=$(dirname $(ldconfig -p | grep libnvidia-encode.so | grep x86-64 | tr ' ' '\n' | grep / | tail -1))
-if [[ ! -d "${NVIDIA_LIB_DIR}" ]]; then
+NVIDIA_ENCODE_LIB=$(ldconfig -p | grep libnvidia-encode.so | grep x86-64 | tr ' ' '\n' | grep / | tail -1)
+if [[ ! -f "${NVIDIA_ENCODE_LIB}" ]]; then
     echo "ERROR: libnvidia-encode.so not found in library path, make sure the NVIDIA driver is installed."
     exit 1
 fi
-rsync -ra ${NVIDIA_LIB_DIR}/{lib*nv*,lib*cuda*,vdpau} /usr/local/nvidia/lib64/
+NVIDIA_LIB_DIR=$(dirname ${NVIDIA_ENCODE_LIB})
+rsync -rav ${NVIDIA_LIB_DIR}/{lib*nv*,lib*cuda*,vdpau} /usr/local/nvidia/lib64/
 
 # Install CUDA libraries
 # NOTE the cuda package version must match the cuda driver version from the nvidia-smi output.
 rpm --import https://developer.download.nvidia.com/compute/cuda/repos/GPGKEY
 rpm --install http://developer.download.nvidia.com/compute/cuda/repos/rhel7/x86_64/cuda-repo-rhel7-10.1.243-1.x86_64.rpm
 yum install -y cuda-nvrtc-dev-10-1.x86_64
+mkdir -p /usr/local/nvidia/cuda/lib64/
+rsync -rav /usr/local/cuda-10.1/lib64/* /usr/local/nvidia/cuda/lib64/
 
 # Pull docker images
 docker pull ${BROKER_PROXY_IMAGE:-"gcr.io/cloud-solutions-images/kube-pod-broker-gce-proxy:latest"}
