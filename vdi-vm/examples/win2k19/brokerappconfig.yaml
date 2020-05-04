@@ -79,4 +79,4 @@ spec:
       nodeLabel: tier1
       resources:
         requests:
-          cpu: 500m
+          cpu: 100m
