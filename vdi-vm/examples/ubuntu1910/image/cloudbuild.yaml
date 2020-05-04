@@ -133,6 +133,8 @@ steps:
           ]
         }
         EOF
+    env:
+      - "PROJECT_ID=${PROJECT_ID}"
     waitFor: ["-"]
 
   ###

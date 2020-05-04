@@ -19,4 +19,8 @@
 sudo touch /var/lock/console.lock
 sudo mkdir -p /var/run/console
 sudo touch /var/run/console/${USER}
+
+# Set default session for user.
+[[ ! -f ${HOME}/.xinitrc ]] && echo "xfce4-session" > ${HOME}/.xinitrc
+
 nohup startx >${HOME}/.startx.log 2>&1 &

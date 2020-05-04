@@ -26,7 +26,7 @@ spec:
   region: ${REGION}
   disk:
     - sourceImageRef:
-        external: ${PROJECT_ID}/ubuntu-desktop
+        external: ${PROJECT_ID}/ubuntu1910-desktop
       autoDelete: true
       boot: true
       diskType: pd-ssd

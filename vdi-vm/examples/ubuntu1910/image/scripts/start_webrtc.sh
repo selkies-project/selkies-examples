@@ -37,6 +37,7 @@ BROKER_COOKIE=$(curl -f -s -H "Metadata-Flavor: Google" http://metadata.google.i
 BROKER_ENDPOINT=$(curl -f -s -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/attributes/broker-endpoint)
 BROKER_PROXY_IMAGE=$(curl -f -s -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/attributes/broker-proxy-image)
 WEBRTC_APP_IMAGE=$(curl -f -s -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/attributes/webrtc-app-image)
+APP_NAME=$(cut -d'_' -f2 <<< ${BROKER_COOKIE%=*})
 
 sudo docker run --name broker-gce-proxy -d --restart=always \
   --net=host \
@@ -59,7 +60,7 @@ sudo docker run --name webrtc -d --restart=always \
     -e GST_DEBUG="*:2" \
     -e LD_LIBRARY_PATH="/usr/local/nvidia/lib64:/usr/local/nvidia/cuda/lib64" \
     -e DISPLAY=":0" \
-    -e SIGNALLING_SERVER="ws://127.0.0.1:5050/centos7/signalling/" \
+    -e SIGNALLING_SERVER="ws://127.0.0.1:5050/${APP_NAME?}/signalling/" \
     -e COTURN_AUTH_HEADER_NAME="x-goog-authenticated-user-email" \
     -e COTURN_WEB_URI="http://127.0.0.1:5050/turn/" \
     -e COTURN_WEB_USERNAME="${HOSTNAME}" \
