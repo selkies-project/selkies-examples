@@ -6,8 +6,8 @@ This example shows how to stream an instance of Blender 3D on Selkies using the 
 
 ## Dependencies
 
-- App Launcher: v1.0.0+
-- WebRTC Streaming Stack: v1.4.0+
+- App Launcher: [v1.0.0+](https://github.com/GoogleCloudPlatform/solutions-k8s-stateful-workload-operator/tree/v1.0.0)
+- WebRTC Streaming Stack: [v1.4.0+](https://github.com/GoogleCloudPlatform/solutions-webrtc-gpu-streaming/tree/v1.4.0)
 
 ## Features
 

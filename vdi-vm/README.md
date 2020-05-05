@@ -6,8 +6,8 @@ Launches virtual machines for users on Selkies.
 
 ## Dependencies
 
-- App Launcher: v1.0.0+
-- WebRTC Streaming Stack: v1.4.0+ (images only)
+- App Launcher: [v1.0.0+](https://github.com/GoogleCloudPlatform/solutions-k8s-stateful-workload-operator/tree/v1.0.0)
+- WebRTC Streaming Stack: [v1.4.0+](https://github.com/GoogleCloudPlatform/solutions-webrtc-gpu-streaming/tree/v1.4.0) (images only)
 
 ## Features
 
