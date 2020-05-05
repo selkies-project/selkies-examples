@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<players version="1" >
+    <current player="SuperTuxKart"/>
+    <player name="SuperTuxKart" guest="false" use-frequency="0"
+            icon-filename="1.png"
+            unique-id="1" saved-session="false"
+            saved-user="0" saved-token=""
+            last-online-name="" last-was-online="false"
+            remember-password="false"
+            default-kart-color="0">
+      <story-mode first-time="false">
+        <abyss solved="easy" best_while_slower="false"/>
+        <candela_city solved="easy" best_while_slower="false"/>
+        <cocoa_temple solved="easy" best_while_slower="false"/>
+        <cornfield_crossing solved="easy" best_while_slower="false"/>
+        <fortmagma solved="easy" best_while_slower="false"/>
+        <gp1 solved="easy" best_while_slower="false"/>
+        <gp2 solved="easy" best_while_slower="false"/>
+        <gp3 solved="easy" best_while_slower="false"/>
+        <gp4 solved="easy" best_while_slower="false"/>
+        <granparadiso_island solved="easy" best_while_slower="false"/>
+        <green_valley solved="easy" best_while_slower="false"/>
+        <hacienda solved="easy" best_while_slower="false"/>
+        <lighthouse solved="easy" best_while_slower="false"/>
+        <mansion solved="easy" best_while_slower="false"/>
+        <mines solved="easy" best_while_slower="false"/>
+        <minigolf solved="easy" best_while_slower="false"/>
+        <olivermath solved="easy" best_while_slower="false"/>
+        <sandtrack solved="easy" best_while_slower="false"/>
+        <scotland solved="easy" best_while_slower="false"/>
+        <snowmountain solved="easy" best_while_slower="false"/>
+        <snowpeak solved="easy" best_while_slower="false"/>
+        <stk_enterprise solved="easy" best_while_slower="false"/>
+        <unlock_bonus_kart1 solved="easy" best_while_slower="false"/>
+        <unlock_bonus_kart2 solved="easy" best_while_slower="false"/>
+        <unlock_supertux solved="easy" best_while_slower="false"/>
+        <volcano_island solved="easy" best_while_slower="false"/>
+        <xr591 solved="easy" best_while_slower="false"/>
+        <zengarden solved="easy" best_while_slower="false"/>
+      </story-mode>
+    </player>
+</players>

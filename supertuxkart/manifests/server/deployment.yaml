@@ -1,0 +1,103 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: supertuxkart-server
+  labels:
+    app.kubernetes.io/name: supertuxkart-server
+    app.kubernetes.io/instance: supertuxkart-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: supertuxkart-server
+      app.kubernetes.io/instance: supertuxkart-server
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: supertuxkart-server
+        app.kubernetes.io/instance: supertuxkart-server
+    spec:
+      terminationGracePeriodSeconds: 10
+      volumes:
+        - name: config
+          configMap:
+            name: supertuxkart-server
+        - name: shared
+          emptyDir: {}
+
+      containers:
+        ###
+        # Matchmaker container
+        ###
+        - name: matchmaker
+          image: gcr.io/${PROJECT_ID}/vdi-supertuxkart:latest
+          imagePullPolicy: IfNotPresent
+          command: ["/stkmatch", "-max-players=8", "-ready-port=8080"]
+          env:
+            - name: STK_SERVER_DNS
+              value: supertuxkart-server.supertuxkart.svc.cluster.local
+            - name: STK_SERVER_PORT
+              value: "2759"
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          volumeMounts:
+            - name: shared
+              mountPath: /var/log/stk
+          ports:
+            - name: healthz
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+              scheme: HTTP
+            periodSeconds: 2
+            timeoutSeconds: 5
+
+        ###
+        # Game server container
+        ###
+        - name: supertuxkart-server
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+          image: gcr.io/${PROJECT_ID}/vdi-supertuxkart:latest
+          workingDir: /opt/app/stk-code/cmake_build/bin
+          command: ["/bin/bash"]
+          args:
+            - -c
+            - |
+              mkdir -p /home/app/.config/supertuxkart/config-0.10/
+              sudo chown 1000:1000 /home/app/.config -R
+              cp /opt/config/server_config.xml /home/app/.config/supertuxkart/config-0.10/
+              if [[ -z ${DEBUG+x} ]]; then
+                  ./supertuxkart --server-config=/home/app/.config/supertuxkart/config-0.10/server_config.xml --lan-server=stkserver
+              else            
+                  while true; do sleep 1000; done
+              fi
+          volumeMounts:
+            - name: shared
+              mountPath: "/home/app/.config/supertuxkart/config-0.10"
+            - name: config
+              mountPath: "/opt/config"
+          ports:
+            - name: stk
+              containerPort: 2759
+              protocol: TCP
+          resources: {}
