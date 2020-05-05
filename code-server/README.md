@@ -2,7 +2,7 @@
 
 ## Description
 
-This repository shows you how to deploy the [Code Server app](https://github.com/cdr/code-server) on Selkies.
+This example shows you how to deploy the [Code Server app](https://github.com/cdr/code-server) on Selkies.
 
 ## Dependencies
 
