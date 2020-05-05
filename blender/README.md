@@ -2,7 +2,7 @@
 
 ## Description
 
-This repository shows how to stream an instance of Blender 3D on Selkies using the GKE WebRTC VDI stack.
+This example shows how to stream an instance of Blender 3D on Selkies using the GKE WebRTC VDI stack.
 
 ## Dependencies
 
@@ -12,7 +12,8 @@ This repository shows how to stream an instance of Blender 3D on Selkies using t
 ## Features
 
 - Blender 3D single application streaming experience.
-- GPU or software renderer per Node Tier selection.
+- Software renderer when Xpra is true and Node Tier is standard.
+- Uses App Streaming base image.
 
 ## Installed Software
 
