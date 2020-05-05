@@ -1,10 +1,29 @@
 ## Unreal Realtime Car Configurator Demo
 
+## Description
+
 This demo shows how to stream a real time car configurator using the [Unreal Engine demo from Darul Solutions](https://darulsolutions.com/Downloads/Interactive-Realtime-Car-Configurator). 
 
 Wine is used to run the demo in a container because only a Windows build is available.
 
 For convenience, the [demo zip file](https://storage.googleapis.com/cloud-solutions-images-vdi/unreal-car-config/CarconfiguratorV2.2.zip) and the cached [wine directory contents](https://storage.googleapis.com/cloud-solutions-images-vdi/unreal-car-config/wine-dir.tar.gz) are stored on GCS and extracted into the container when the image is built. 
+
+## Dependencies
+
+- App Launcher: v1.0.0+
+- WebRTC Streaming Stack: v1.4.0+
+
+## Features
+
+- GPU or software renderer per Node Tier selection.
+- Uses Wine64 base image.
+
+## Installed Software
+
+- Wine64
+- Unreal Engine car configurator demo
+
+## Tutorials
 
 This tutorial will walk you through the following:
 
