@@ -33,7 +33,7 @@ BROKER_ENDPOINT="https://${BROKER_DOMAIN?}"
 echo "INFO: Setting instance metadata"
 ${GCLOUD} compute instances add-metadata ${INSTANCE_NAME?} \
     --zone ${INSTANCE_ZONE?} \
-    --metadata vdi-user=${VDI_USER?},broker-cookie=broker_${APP_NAME?}=${BROKER_COOKIE?},broker-client-id=${CLIENT_ID?},broker-endpoint=${BROKER_ENDPOINT?},broker-proxy-image=${VDI_BROKER_PROXY_IMAGE?},webrtc-app-image=${VDI_WEBRTC_APP_IMAGE?}
+    --metadata vdi-user=${VDI_USER?},broker-cookie=broker_${APP_NAME?}=${BROKER_COOKIE?},broker-client-id=${CLIENT_ID?},broker-endpoint=${BROKER_ENDPOINT?},broker-proxy-image=${VDI_BROKER_PROXY_IMAGE?},webrtc-app-image=${VDI_WEBRTC_APP_IMAGE?},webrtc-idle-timeout=${WATCHDOG_TIMEOUT?}
 
 if [[ "${STATUS}" == "TERMINATED" ]]; then
     echo "INFO: Starting instance"

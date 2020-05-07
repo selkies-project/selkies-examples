@@ -56,15 +56,7 @@ spec:
       oldRepo: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-gst-web
       newRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-gst-web
       newTag: latest
-  userParams:
-    - name: enableAudio
-      displayName: "Audio"
-      type: bool
-      default: "false"
-    - name: idleShutdown
-      displayName: "Idle Shutdown"
-      type: bool
-      default: "true"
+  userParams: []
   shutdownHooks:
     - selector: "app=vm-controller"
       container: "controller"

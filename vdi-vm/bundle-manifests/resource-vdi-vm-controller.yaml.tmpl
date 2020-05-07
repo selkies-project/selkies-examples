@@ -175,6 +175,8 @@ spec:
               value: "{{ default $defaultProxyImage .AppParams.brokerProxyImage }}"
             - name: VDI_WEBRTC_APP_IMAGE
               value: "{{ default $defaultWebRTCAppImage .AppParams.webRTCAppImage }}"
+            - name: WATCHDOG_TIMEOUT
+              value: "{{default 600 .AppParams.idleShutdownTimeout}}"
             # Add the userParams to the env prefixed with VDI_
             {{- range $key, $value := .UserParams }}
             - name: VDI_{{ $key }}
