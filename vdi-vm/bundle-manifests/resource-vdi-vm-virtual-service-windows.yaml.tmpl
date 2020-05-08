@@ -30,13 +30,16 @@ spec:
     - match:
         - uri:
             prefix: /{{.App}}/api/
+          headers:
+            cookie:
+              regex: ".*broker_{{.App}}={{.CookieValue}}.*"
       rewrite:
         uri: /api
       route:
         - destination:
             host: {{.FullName}}-vm-controller
             port:
-              number: 80   
+              number: 8080
       websocketUpgrade: true
     ###
     # rule for guacamole-lite websocket
@@ -44,6 +47,9 @@ spec:
     - match:
         - uri:
             prefix: /{{.App}}/ws/
+          headers:
+            cookie:
+              regex: ".*broker_{{.App}}={{.CookieValue}}.*"
       rewrite:
         uri: /ws
       route:

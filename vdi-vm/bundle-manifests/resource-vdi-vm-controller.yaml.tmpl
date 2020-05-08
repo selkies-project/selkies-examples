@@ -89,9 +89,8 @@ spec:
   selector:
     app: vm-controller
   ports:
-    # Port 80 is the default port routed by the pod broker.
-    - port: 80
-      name: web
+    - port: 8080
+      name: api
       targetPort: 8080
     # RDP tunnel for windows
     - port: 3389
