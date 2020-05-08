@@ -17,8 +17,8 @@ FROM ${CODE_SERVER_BASE} as code-server
 
 FROM gcr.io/cloudshell-images/cloudshell:latest
 
-COPY --from=code-server /usr/local/lib/code-server /usr/local/lib/code-server
-RUN ln -s /usr/local/lib/code-server/code-server /usr/local/bin/code-server
+COPY --from=code-server /usr/lib/code-server /usr/lib/code-server
+RUN ln -s /usr/lib/code-server/bin/code-server /usr/local/bin/code-server
 
 # Install additional tools
 RUN apt-get install -y \
@@ -76,4 +76,4 @@ ENV SHELL /bin/bash
 ENV USER coder
 ENV DISPLAY :0
 
-ENTRYPOINT ["/usr/local/bin/code-server", "--auth=none", "--host=0.0.0.0", "--port", "3180", "--disable-updates"]
+ENTRYPOINT ["/usr/local/bin/code-server", "--auth=none", "--bind-addr=0.0.0.0:3180", "--disable-updates"]
