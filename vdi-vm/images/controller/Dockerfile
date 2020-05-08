@@ -12,17 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+FROM gcr.io/cloud-builders/kubectl as kubectl
+
 FROM google/cloud-sdk:alpine
 
 RUN apk add -u openssl jq npm && \
     npm install -g json-server
 
-ARG KUBECTL_VERSION=1.18.1
-
 # Install kubectl
-RUN wget --timeout 2 --tries 5 https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl && \
-    chmod +x kubectl && \
-    mv kubectl /usr/local/bin/
+COPY --from=kubectl /builder/google-cloud-sdk/bin/kubectl /usr/local/bin/kubectl
 
 WORKDIR /run/vdi
 
