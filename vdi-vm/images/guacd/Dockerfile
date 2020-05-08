@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # Copyright 2019 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-[[ "$1" == "false" ]] && echo "Skipping instance shutdown" && exit 0
+FROM guacamole/guacd:1.1.0
 
-gcloud -q --project ${INSTANCE_PROJECT?} compute instances stop ${INSTANCE_NAME?} --zone ${INSTANCE_ZONE?}
+RUN apt-get update && apt-get install -y curl ca-certificates
+
+COPY watchdog.sh idle_shutdown.sh /

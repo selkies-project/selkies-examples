@@ -14,6 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-[[ "$1" == "false" ]] && echo "Skipping instance shutdown" && exit 0
+# This script is called by a watchdog trigger to shutdown the user pod
+# by calling the DELETE method on the pod broker.
 
-gcloud -q --project ${INSTANCE_PROJECT?} compute instances stop ${INSTANCE_NAME?} --zone ${INSTANCE_ZONE?}
+echo "INFO: Shutting down ${APP_NAME?} pod for user ${POD_USER?} through pod broker" >&2
+
+ID_TOKEN=$(curl -s -f -H "Metadata-Flavor: Google" "http://metadata/computeMetadata/v1/instance/service-accounts/default/identity?audience=${CLIENT_ID?}&format=full")
+
+curl -s -f -H "Cookie: ${BROKER_COOKIE?}" -H "Authorization: Bearer ${ID_TOKEN}" -X DELETE ${BROKER_ENDPOINT?}/${APP_NAME?}/

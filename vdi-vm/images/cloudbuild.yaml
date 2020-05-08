@@ -23,6 +23,9 @@ substitutions:
 # Images to be pushed
 ###
 images: [
+    # guacd
+    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-guacd:${_IMAGE_TAG}',
+    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-guacd:latest',
     # guacamole-lite
     'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-guacamole-lite:${_IMAGE_TAG}',
     'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-guacamole-lite:latest',
@@ -38,6 +41,34 @@ images: [
 ]
 
 steps:
+###
+# guacd image
+###
+- name: 'gcr.io/cloud-builders/docker'
+  id: guacd-pull
+  entrypoint: 'bash'
+  args: ["-c", "if [[ '${_USE_CACHE}' == 'true' ]]; then (docker pull gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-guacd:latest || exit 0); fi"]
+  waitFor: ["-"]
+- name: 'gcr.io/cloud-builders/docker'
+  id: guacd
+  args: [
+            'build',
+            '-t', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-guacd:${_IMAGE_TAG}',
+            '--cache-from', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-guacd:latest',
+            'guacd'
+        ]
+  waitFor:
+    - guacd-pull
+- name: 'gcr.io/cloud-builders/docker'
+  id: guacd-tags
+  args: [
+            'tag',
+            'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-guacd:${_IMAGE_TAG}',
+            'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-guacd:latest',
+        ]
+  waitFor:
+    - guacd
+
 ###
 # guacamole-lite image
 ###

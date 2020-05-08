@@ -54,9 +54,9 @@ spec:
 apiVersion: iam.cnrm.cloud.google.com/v1beta1
 kind: IAMPolicyMember
 metadata:
-  name: vdi-vm-controller-secret-accessor
+  name: vdi-vm-controller-secret-admin
 spec:
   member: serviceAccount:vdi-vm-controller@${PROJECT_ID}.iam.gserviceaccount.com
-  role: roles/secretmanager.secretAccessor
+  role: roles/secretmanager.admin
   resourceRef:
     kind: Project

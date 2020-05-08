@@ -24,6 +24,8 @@ if [[ -n "${PASSWORD}" ]]; then
     echo "INFO: Using password from Secret Manager secret: ${INSTANCE_NAME?}-password"
 else
     PASSWORD=$(${GCLOUD} compute reset-windows-password ${INSTANCE_NAME?} --zone ${INSTANCE_ZONE?} --user $USERNAME --format='value(password)')
+    # Save password in Secret Manager
+    gcloud -q secrets create ${INSTANCE_NAME?}-password --replication-policy=automatic --data-file <(echo -n ${PASSWORD})
 fi
 
 echo "INFO: Starting credentials API"

@@ -51,17 +51,32 @@ spec:
       labels:
         app: vm
     spec:
-      # Disable service account used for accessing the kubernetes API/
-      automountServiceAccountToken: false
+      serviceAccount: {{.Namespace}}
 
       # Terminate pod after 10 seconds of receiving SIGTERM
       terminationGracePeriodSeconds: 5
+
+      ###
+      # Shared directory across containers for guacd logs.
+      ###
+      volumes:
+        - name: guacamole
+          emptyDir: {}
+
       containers:
         ###
         # Guacd container
         ###
         - name: guacd
-          image: guacamole/guacd:1.1.0
+          image: gcr.io/cloud-solutions-images/vdi-vm-guacd:latest
+          command: ["/bin/bash"]
+          args:
+            - -exc
+            - |
+              /usr/local/guacamole/sbin/guacd -b 0.0.0.0 -L $GUACD_LOG_LEVEL -f 2>&1 | tee /run/guacamole/guacd.log
+          volumeMounts:
+            - name: guacamole
+              mountPath: /run/guacamole
           ports:
             - name: guacd
               containerPort: 4822
@@ -69,6 +84,7 @@ spec:
           resources:
             requests:
               cpu: 100m
+
         ###
         # Guacamole lite container
         ###
@@ -96,6 +112,7 @@ spec:
             httpGet:
               path: /healthz
               port: 8080
+
         ###
         # Guacamole lite token container
         ###
@@ -125,6 +142,7 @@ spec:
             httpGet:
               path: /healthz
               port: 8081
+
         ###
         # Guacamole lite web container
         ###
@@ -150,4 +168,27 @@ spec:
             httpGet:
               path: /
               port: 80
+
+        ###
+        # Idle shutdown container
+        ###
+        - name: watchdog
+          image: gcr.io/cloud-solutions-images/vdi-vm-guacd:latest
+          command: ["/watchdog.sh"]
+          env:
+          - name: BROKER_COOKIE
+            value: "broker_{{.App}}={{.CookieValue}}"
+          - name: BROKER_ENDPOINT
+            value: "https://{{.SysParams.Domain}}/broker"
+          - name: CLIENT_ID
+            value: "{{.ClientID}}"
+          - name: POD_USER
+            value: "{{.User}}"
+          - name: APP_NAME
+            value: "{{.App}}"
+          - name: WATCHDOG_TIMEOUT
+            value: "{{default 600 .AppParams.idleShutdownTimeout}}"
+          volumeMounts:
+            - name: guacamole
+              mountPath: /run/guacamole
 {{- end}}

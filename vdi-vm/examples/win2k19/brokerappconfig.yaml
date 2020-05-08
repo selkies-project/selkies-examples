@@ -30,9 +30,9 @@ spec:
   defaultTag: "latest"
   images:
     guacd:
-      oldRepo: guacamole/guacd
-      newRepo: guacamole/guacd
-      newTag: "1.1.0"
+      oldRepo: gcr.io/cloud-solutions-images/vdi-vm-guacd
+      newRepo: gcr.io/${PROJECT_ID}/vdi-vm-guacd
+      newTag: latest
     controller:
       oldRepo: gcr.io/cloud-solutions-images/vdi-vm-controller
       newRepo: gcr.io/${PROJECT_ID}/vdi-vm-controller
@@ -49,11 +49,6 @@ spec:
       oldRepo: gcr.io/cloud-solutions-images/vdi-vm-guacamole-lite-web
       newRepo: gcr.io/${PROJECT_ID}/vdi-vm-guacamole-lite-web
       newTag: latest
-  userParams:
-    - name: idleShutdown
-      displayName: "Idle Shutdown"
-      type: bool
-      default: "true"
   appParams:
     # Name of the pre-created instance template.
     - name: instanceTemplate
