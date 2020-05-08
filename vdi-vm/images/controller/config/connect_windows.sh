@@ -17,7 +17,14 @@
 GCLOUD="gcloud -q --project ${INSTANCE_PROJECT?}"
 
 USERNAME=vdi
-PASSWORD=$(${GCLOUD} compute reset-windows-password ${INSTANCE_NAME?} --zone ${INSTANCE_ZONE?} --user $USERNAME --format='value(password)')
+
+PASSWORD=$(gcloud -q secrets versions access 1 --secret ${INSTANCE_NAME?}-password 2>/dev/null || true)
+
+if [[ -n "${PASSWORD}" ]]; then
+    echo "INFO: Using password from Secret Manager secret: ${INSTANCE_NAME?}-password"
+else
+    PASSWORD=$(${GCLOUD} compute reset-windows-password ${INSTANCE_NAME?} --zone ${INSTANCE_ZONE?} --user $USERNAME --format='value(password)')
+fi
 
 echo "INFO: Starting credentials API"
 jq --arg u "$USERNAME" --arg p "$(echo -n $PASSWORD | base64)" '.api = {"credential_type": "ephemeral", "username": $u, "password": $p}' <<< '{"api":{}}' > api.json
