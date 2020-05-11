@@ -9,7 +9,7 @@ export PROJECT=YOUR_PROJECT
 ```
 
 ```bash
-gcloud config set project-id $PROJECT
+gcloud config set project $PROJECT
 ```
 
 ## DNS record with Cloud Endpoints
