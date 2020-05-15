@@ -12,30 +12,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+timeout: 300s
 substitutions:
   _ACTION: apply
+  _NAME: broker
   _REGION: us-west1
-  _INSTANCE_PROJECT: ${PROJECT_ID}
 tags:
-  - vdi-vm-example-manifests-win2k19
   - vdi-vm
+  - vdi-vm-manifests
 steps:
   ###
   # Deploy manifests to cluster.
   ###
   - name: "gcr.io/cloud-builders/kubectl"
     id: deploy-manifests
-    entrypoint: "bash"
+    entrypoint: bash
     args:
-      - "-exc"
+      - -exc
       - |
-        kubectl kustomize . | \
-          sed \
-            -e 's/$${PROJECT_ID}/${PROJECT_ID}/g' \
-            -e 's/$${INSTANCE_PROJECT}/${_INSTANCE_PROJECT}/g' \
-            -e 's/$${REGION}/${_REGION}/g' | \
-          /builder/kubectl.bash ${_ACTION} -f -
+        KACTION="apply"
+        [[ "${_ACTION}" == "plan" ]] && KACTION="apply --dry-run"
+        [[ "${_ACTION}" == "destroy" ]] && KACTION="delete"
+        kubectl kustomize . | sed \
+          -e 's/$${PROJECT_ID}/${PROJECT_ID}/g' \
+          -e 's/$${REGION}/'${_REGION}'/g' \
+          | /builder/kubectl.bash $$KACTION -f -
     env:
       - "CLOUDSDK_CORE_PROJECT=${PROJECT_ID}"
       - "CLOUDSDK_COMPUTE_REGION=${_REGION}"
-      - "CLOUDSDK_CONTAINER_CLUSTER=broker-${_REGION}"
+      - "CLOUDSDK_CONTAINER_CLUSTER=${_NAME}-${_REGION}"

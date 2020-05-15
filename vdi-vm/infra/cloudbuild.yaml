@@ -1,0 +1,49 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+timeout: 600s
+substitutions:
+  _ACTION: apply
+  _NAME: broker
+tags:
+  - vdi-vm-infra
+  - vdi-vm
+steps:
+  ###
+  # Generate SSH key and save to Secret Manager if it doesn't exist.
+  # This is used by the VM controller to access linux instances.
+  ###
+  - name: gcr.io/cloud-builders/gcloud
+    id: vdi-vm-controller-ssh-key
+    entrypoint: bash
+    args:
+      - -exc
+      - |
+        (gcloud secrets versions access 1 --secret vdi-vm-controller-ssh-key >/dev/null) && exit 0
+        ssh-keygen -f vdi-vm-controller.key -t rsa -N ''
+        gcloud secrets create vdi-vm-controller-ssh-key \
+              --replication-policy=automatic \
+              --data-file vdi-vm-controller.key
+
+  ###
+  # Apply terraform to provision infrastructure
+  ###
+  - name: "gcr.io/${PROJECT_ID}/${_NAME}-installer"
+    id: "terraform-apply"
+    entrypoint: "/workspace/deploy.sh"
+    env:
+      - TF_VAR_project_id=${PROJECT_ID}
+      - TF_VAR_name=${_NAME}
+      - TERRAFORM_WORKSPACE_NAME=vdi-vm
+      - ACTION=${_ACTION}

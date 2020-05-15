@@ -199,4 +199,11 @@ spec:
           resources:
             requests:
               cpu: 100m
+          livenessProbe:
+            exec:
+              command:
+                - cat
+                - /tmp/alive
+            failureThreshold: 3
+            periodSeconds: 5
 

@@ -18,7 +18,9 @@ substitutions:
   _USE_CACHE: "true"
   _IMAGE_PREFIX: vdi-vm
   _IMAGE_TAG: latest
-
+tags:
+  - vdi-vm-base-images
+  - vdi-vm
 ###
 # Images to be pushed
 ###

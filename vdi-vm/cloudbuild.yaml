@@ -17,50 +17,60 @@ substitutions:
   _ACTION: apply
   _NAME: broker
   _REGION: us-west1
-
+tags:
+  - vdi-vm
 steps:
   ###
-  # Generate SSH key and save to Secret Manager
+  # Cleanup any existing sub-jobs to prevent overlapping executions.
   ###
-  - name: gcr.io/cloud-builders/gcloud
-    id: vdi-vm-controller-ssh-key
+  - name: "gcr.io/cloud-builders/gcloud"
+    id: cleanup-sub-jobs
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        gcloud -q builds list --ongoing --filter='tags[]~vdi-vm-infra|vdi-vm-manifests' --format='value(id)' | \
+          xargs --no-run-if-empty gcloud -q builds cancel >/dev/null
+
+  ###
+  # Write tfvars to Secret Manager
+  ###
+  - name: "gcr.io/cloud-builders/gcloud"
+    id: vdi-vm-tfvars
     entrypoint: bash
     args:
       - -exc
       - |
-        (gcloud secrets versions access 1 --secret vdi-vm-controller-ssh-key >/dev/null) && exit 0
-        ssh-keygen -f vdi-vm-controller.key -t rsa -N ''
-        gcloud secrets create vdi-vm-controller-ssh-key \
-              --replication-policy=automatic \
-              --data-file vdi-vm-controller.key
+        cat - | tee vdi-vm-subnet-regions.auto.tfvars <<EOF
+        subnet_regions = [
+            "${_REGION}"
+        ]
+        EOF
+
+        # Create secret if it doesn't exist.
+        (gcloud secrets versions access 1 --secret vdi-vm-tfvars-subnet-regions >/dev/null) || \
+          gcloud secrets create vdi-vm-tfvars-subnet-regions \
+            --replication-policy=automatic \
+            --data-file vdi-vm-subnet-regions.auto.tfvars
+
+  ###
+  # Provision infrastructure
+  ###
+  - name: "gcr.io/cloud-builders/gcloud"
+    id: vdi-vm-infra
+    dir: infra
+    args:
+      - builds
+      - submit
+      - --substitutions=_NAME=${_NAME},_ACTION=${_ACTION}
+
   ###
   # Deploy manifests to cluster.
   ###
-  - name: "gcr.io/cloud-builders/kubectl"
-    id: deploy-manifests
-    entrypoint: bash
+  - name: "gcr.io/cloud-builders/gcloud"
+    id: vdi-vm-manifests
+    dir: manifests
     args:
-      - -exc
-      - |
-        kubectl kustomize . | sed \
-          -e 's/$${PROJECT_ID}/${PROJECT_ID}/g' \
-          -e 's/$${REGION}/'${_REGION}'/g' \
-          | /builder/kubectl.bash ${_ACTION} -f -
-    env:
-      - "CLOUDSDK_CORE_PROJECT=${PROJECT_ID}"
-      - "CLOUDSDK_COMPUTE_REGION=${_REGION}"
-      - "CLOUDSDK_CONTAINER_CLUSTER=${_NAME}-${_REGION}"
-
-  - name: "gcr.io/cloud-builders/kubectl"
-    id: wait-for-cnrm
-    entrypoint: bash
-    args:
-      - -exc
-      - |
-        for t in iamserviceaccount iampolicymember computenetwork computesubnetwork computefirewall; do
-          kubectl wait $t -l app=vdi-vm --for=condition=Ready --timeout=180s -n pod-broker-system
-        done
-    env:
-      - "CLOUDSDK_CORE_PROJECT=${PROJECT_ID}"
-      - "CLOUDSDK_COMPUTE_REGION=${_REGION}"
-      - "CLOUDSDK_CONTAINER_CLUSTER=${_NAME}-${_REGION}"
+      - builds
+      - submit
+      - --substitutions=_NAME=${_NAME},_REGION=${_REGION},_ACTION=${_ACTION}

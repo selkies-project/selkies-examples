@@ -34,9 +34,9 @@ spec:
       type: PERSISTENT
   networkInterface:
     - networkRef:
-        name: vdi-vm
+        external: vdi-vm
       subnetworkRef:
-        name: vdi-vm-${REGION}
+        external: vdi-vm-${REGION}
       subnetworkProject: ${PROJECT_ID}
       accessConfig: [{}]
   canIpForward: false
@@ -46,7 +46,7 @@ spec:
     preemptible: false
   serviceAccount:
     serviceAccountRef:
-      name: vdi-vm-default
+      external: vdi-vm-default@${PROJECT_ID}.iam.gserviceaccount.com
     scopes:
       - cloud-platform
   guestAccelerator:

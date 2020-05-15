@@ -16,7 +16,9 @@ substitutions:
   _ACTION: apply
   _REGION: us-west1
   _INSTANCE_PROJECT: ${PROJECT_ID}
-
+tags:
+  - vdi-vm-example-manifests-centos7
+  - vdi-vm
 steps:
   ###
   # Deploy manifests to cluster.

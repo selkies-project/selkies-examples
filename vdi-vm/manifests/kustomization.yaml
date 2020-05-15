@@ -15,12 +15,5 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-namespace: pod-broker-system
-
-commonLabels:
-  app: vdi-vm
-
-resources:
-  - vdi-vm-controller-gsa-cnrm.yaml
-  - vdi-vm-default-gsa-cnrm.yaml
-  - vdi-vm-vpc-cnrm.yaml
+bases:
+  - bundle-manifests/

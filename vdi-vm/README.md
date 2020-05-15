@@ -51,7 +51,20 @@ gcloud config set project ${PROJECT_ID?}
 (cd images && gcloud builds submit --project ${PROJECT_ID?})
 ```
 
-2. Deploy manifests:
+3. Set the regions in the broker project that you want to deploy instances to:
+
+```bash
+gcloud secrets create vdi-vm-tfvars-subnet-regions \
+  --replication-policy=automatic \
+  --data-file <(cat - <<EOF
+subnet_regions = ["us-west1"]
+EOF
+)
+```
+
+> NOTE: this Secret Manager secret is used in the terraform apply by the cloud build.
+
+4. Provision infrastructure and deploy manifests:
 
 ```bash
 REGION=us-west1
@@ -66,6 +79,8 @@ gcloud builds submit --substitutions=_REGION=${REGION?}
 > NOTE: At this point you have the control plane components installed.
 
 ## Add IAM permissions to target project
+
+Follow the steps below if the poject you want to dpeloy instances to is different than your broker project.
 
 1. Set project for where instances will be created:
 

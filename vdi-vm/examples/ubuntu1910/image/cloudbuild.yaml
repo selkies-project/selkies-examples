@@ -24,7 +24,9 @@ substitutions:
   _INSTALL_WEBRTC: "true"
   _BROKER_PROXY_IMAGE: "gcr.io/${PROJECT_ID}/kube-pod-broker-gce-proxy:latest"
   _GST_WEBRTC_IMAGE: "gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-gst-webrtc-app:latest"
-
+tags:
+  - vdi-vm
+  - vdi-vm-example-image-ubuntu1910
 steps:
   ###
   # Clone packer builder repo if builder does not exist
