@@ -22,9 +22,9 @@ while true; do
 done
 echo "INFO: workload identity is ready"
 
-touch /tmp/alive
-
 bash create_instance.sh
+
+touch /tmp/alive
 
 if [[ "${INSTANCE_OS?}" == "windows" ]]; then
     bash connect_windows.sh
