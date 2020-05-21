@@ -1,0 +1,39 @@
+{
+  "substitutions": {
+    "_EXAMPLES_BRANCH": "qwiklabs",
+    "_SRC_IMAGE_PROJECT": "",
+    "_DEST_IMAGE_PROJECT": ""
+  },
+  "tags": [
+    "copy-selkies-images"
+  ],
+  "timeout": "5400s",
+  "options": {
+    "machineType": "N1_HIGHCPU_8"
+  },
+  "steps": [
+    {
+      "name": "gcr.io/cloud-builders/git",
+      "id": "examples-repo",
+      "args": [
+        "clone",
+        "https://github.com/GoogleCloudPlatform/solutions-k8s-stateful-workload-operator-examples.git",
+        "-b",
+        "${_EXAMPLES_BRANCH}"
+      ]
+    },
+    {
+      "name": "gcr.io/cloud-builders/gcloud",
+      "id": "copy-gcr-images",
+      "dir": "/workspace/solutions-k8s-stateful-workload-operator-examples/selkies-demo-env",
+      "args": [
+        "deployment-manager",
+        "deployments",
+        "create",
+        "copy-gcr-images-${BUILD_ID}",
+        "--template=templates/copy-gcr-images.jinja",
+        "--properties=src-project:${_SRC_IMAGE_PROJECT},dest-project:${_DEST_IMAGE_PROJECT}"
+      ]
+    }
+  ]
+}

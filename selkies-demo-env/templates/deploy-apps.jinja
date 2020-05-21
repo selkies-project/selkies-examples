@@ -1,0 +1,225 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+resources:
+###
+# Deploy apps with cloud build
+###
+- name: {{ env["name"] }}
+  type: gcp-types/cloudbuild-v1:cloudbuild.projects.builds.create
+  metadata:
+    dependsOn: {{ properties['dependsOn'] }}
+  properties:
+    substitutions:
+      _REGION: {{ properties["region"] }}
+      _APP_LAUNCHER_BRANCH: "{{ properties["launcher-branch"] }}"
+      _EXAMPLES_BRANCH: "{{ properties["examples-branch"] }}"
+      _WEBRTC_BRANCH: "{{ properties["webrtc-branch"] }}"
+    tags:
+      - {{ env["name"] }}
+    timeout: "3600s"
+    steps:
+      ###
+      # Clone the app launcher repo
+      ###
+      - name: "gcr.io/cloud-builders/git"
+        id: app-launcher-repo
+        args:
+          - clone
+          - https://github.com/GoogleCloudPlatform/solutions-k8s-stateful-workload-operator.git
+          - -b
+          - ${_APP_LAUNCHER_BRANCH}
+        waitFor: ["-"]
+
+      ###
+      # Clone the examples repo
+      ###
+      - name: "gcr.io/cloud-builders/git"
+        id: examples-repo
+        args:
+          - clone
+          - https://github.com/GoogleCloudPlatform/solutions-k8s-stateful-workload-operator-examples.git
+          - -b
+          - ${_EXAMPLES_BRANCH}
+        waitFor: ["-"]
+      
+      ###
+      # Clone the webrtc repo
+      ###
+      - name: "gcr.io/cloud-builders/git"
+        id: webrtc-repo
+        args:
+          - clone
+          - https://github.com/GoogleCloudPlatform/solutions-webrtc-gpu-streaming.git
+          - -b
+          - ${_WEBRTC_BRANCH}
+        waitFor: ["-"]
+
+      ###
+      # Deploy code-server manifests
+      ###
+      - name: "gcr.io/cloud-builders/gcloud"
+        id: deploy-code-server-manifests
+        dir:  /workspace/solutions-k8s-stateful-workload-operator-examples/code-server
+        args:
+          - builds
+          - submit
+          - --substitutions=_REGION=${_REGION}
+
+      ###
+      # Deploy WebRTC manifests
+      ###
+      - name: "gcr.io/cloud-builders/gcloud"
+        id: deploy-webrtc-manifests
+        dir: /workspace/solutions-webrtc-gpu-streaming/manifests
+        args:
+          - builds
+          - submit
+          - --substitutions=_REGION=${_REGION}
+      
+      ###
+      # Deploy vdi vm manifests
+      ###
+      - name: "gcr.io/cloud-builders/gcloud"
+        id: deploy-vdi-vm-manifests
+        dir: /workspace/solutions-k8s-stateful-workload-operator-examples/vdi-vm/manifests
+        args:
+          - builds
+          - submit
+          - --substitutions=_REGION=${_REGION}
+
+      ###
+      # Deploy win2k19 example
+      ###
+      - name: "gcr.io/cloud-builders/gcloud"
+        id: deploy-win2k19-manifests
+        dir: /workspace/solutions-k8s-stateful-workload-operator-examples/vdi-vm/examples/win2k19
+        args:
+          - builds
+          - submit
+          - --substitutions=_REGION=${_REGION}
+
+      ###
+      # Deploy ubuntu1910 example
+      ###
+      - name: "gcr.io/cloud-builders/gcloud"
+        id: deploy-ubuntu1910-manifests
+        dir: /workspace/solutions-k8s-stateful-workload-operator-examples/vdi-vm/examples/ubuntu1910
+        args:
+          - builds
+          - submit
+          - --substitutions=_REGION=${_REGION}
+
+      ###
+      # Deploy jupyter notebook example
+      ###
+      - name: "gcr.io/cloud-builders/gcloud"
+        id: deploy-jupyter-notebook-manifests
+        dir: /workspace/solutions-k8s-stateful-workload-operator/examples/jupyter-notebook
+        args:
+          - builds
+          - submit
+          - --substitutions=_REGION=${_REGION}
+
+      ###
+      # Deploy XFCE Desktop example
+      ###
+      - name: "gcr.io/cloud-builders/gcloud"
+        id: deploy-xfce-desktop-manifests
+        dir: /workspace/solutions-webrtc-gpu-streaming/examples/xfce-desktop
+        args:
+          - builds
+          - submit
+          - --substitutions=_REGION=${_REGION}
+      
+      ###
+      # Deploy Blender 3d example
+      ###
+      - name: "gcr.io/cloud-builders/gcloud"
+        id: deploy-blender-manifests
+        dir: /workspace/solutions-k8s-stateful-workload-operator-examples/blender
+        args:
+          - builds
+          - submit
+          - --substitutions=_REGION=${_REGION}
+      
+      ###
+      # Deploy SuperTuxKart example
+      ###
+      - name: "gcr.io/cloud-builders/gcloud"
+        id: deploy-supertuxkart-manifests
+        dir: /workspace/solutions-k8s-stateful-workload-operator-examples/supertuxkart
+        args:
+          - builds
+          - submit
+          - --substitutions=_REGION=${_REGION}
+      
+      ###
+      # Deploy unigine-heaven example
+      ###
+      - name: "gcr.io/cloud-builders/gcloud"
+        id: deploy-unigine-heaven-manifests
+        dir: /workspace/solutions-k8s-stateful-workload-operator-examples/unigine-heaven
+        args:
+          - builds
+          - submit
+          - --substitutions=_REGION=${_REGION}
+      
+      ###
+      # Deploy unigine-valley example
+      ###
+      - name: "gcr.io/cloud-builders/gcloud"
+        id: deploy-unigine-valley-manifests
+        dir: /workspace/solutions-k8s-stateful-workload-operator-examples/unigine-valley
+        args:
+          - builds
+          - submit
+          - --substitutions=_REGION=${_REGION}
+      
+      ###
+      # Deploy unreal-car-configurator example
+      ###
+      - name: "gcr.io/cloud-builders/gcloud"
+        id: deploy-unreal-car-configurator-manifests
+        dir: /workspace/solutions-k8s-stateful-workload-operator-examples/unreal-car-configurator/manifests
+        args:
+          - builds
+          - submit
+          - --substitutions=_REGION=${_REGION}
+      
+      ###
+      # Deploy xonotic example
+      ###
+      - name: "gcr.io/cloud-builders/gcloud"
+        id: deploy-xonotic-manifests
+        dir: /workspace/solutions-k8s-stateful-workload-operator-examples/xonotic
+        args:
+          - builds
+          - submit
+          - --substitutions=_REGION=${_REGION}
+      
+      ###
+      # Wait for image pull
+      ###
+      - name: "gcr.io/cloud-builders/kubectl"
+        id: wait-for-image-pull
+        entrypoint: "bash"
+        args:
+          - "-ec"
+          - |
+            gcloud container clusters get-credentials --project=${PROJECT_ID} --region=${_REGION} broker-${_REGION}
+
+            echo "INFO: Waiting for images to be pulled"
+            until [[ $(kubectl get pod -n pod-broker-system -l app=image-pull -o name | wc -l) -eq 0 ]]; do sleep 5; done
+            echo "INFO: Image pull complete"

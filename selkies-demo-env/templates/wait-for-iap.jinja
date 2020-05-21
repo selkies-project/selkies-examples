@@ -1,0 +1,97 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+resources:
+###
+# Wait for IAP using cloud build
+###
+- name: {{ env["name"] }}
+  type: gcp-types/cloudbuild-v1:cloudbuild.projects.builds.create
+  metadata:
+    dependsOn: {{ properties['dependsOn'] }}
+  properties:
+    substitutions:
+      _REGION: {{ properties["region"] }}
+      _APP_LAUNCHER_BRANCH: "{{ properties["launcher-branch"] }}"
+      _NAME: "broker"
+    tags:
+      - {{ env["name"] }}
+    timeout: "3600s"
+    steps:
+      ###
+      # Clone the app launcher repo
+      ###
+      - name: "gcr.io/cloud-builders/git"
+        id: app-launcher-repo
+        args:
+          - clone
+          - https://github.com/GoogleCloudPlatform/solutions-k8s-stateful-workload-operator.git
+          - -b
+          - ${_APP_LAUNCHER_BRANCH}
+        waitFor: ["-"]
+      ###
+      # Wait for IAP and GCLB to stabilize - phase 1
+      ###
+      - name: "gcr.io/${PROJECT_ID}/${_NAME}-installer"
+        id: "wait-for-iap-1"
+        dir: "/workspace/solutions-k8s-stateful-workload-operator"
+        entrypoint: "bash"
+        args:
+          - -xc
+          - |
+            CLIENT_ID=$$(gcloud secrets versions access 1 --secret broker-oauth2-client-id)
+            ENDPOINT="https://${_NAME}.endpoints.${PROJECT_ID}.cloud.goog/broker/"
+            # Wait up to 10 minutes for LB to stabilize
+            rm -f /workspace/iap_timeout
+            timeout 600 bash ./setup/scripts/wait_for_iap.sh broker@${PROJECT_ID}.iam.gserviceaccount.com $${CLIENT_ID} $${ENDPOINT}
+            if [[ $? -ne 0 ]]; then
+              echo "timeout" > /workspace/iap_timeout
+            fi
+        waitFor:
+          - app-launcher-repo
+      ###
+      # Check for phase 1 timeout, if timeout then run fix_autoneg script
+      ###
+      - name: "gcr.io/${PROJECT_ID}/${_NAME}-installer"
+        id: "fix-autoneg"
+        dir: "/workspace/solutions-k8s-stateful-workload-operator"
+        entrypoint: "bash"
+        args:
+          - -exc
+          - |
+            [[ ! -f /workspace/iap_timeout ]] && echo "echo: IAP is ready, skipping fix-autoneg" && exit 0
+
+            gcloud container clusters get-credentials --region ${_REGION} ${_NAME}-${_REGION}
+            ./setup/scripts/fix_autoneg.sh
+        waitFor:
+          - wait-for-iap-1
+      ###
+      # Wait for IAP and GCLB to stabilize phase 2
+      ###
+      - name: "gcr.io/${PROJECT_ID}/${_NAME}-installer"
+        id: "wait-for-iap-2"
+        dir: "/workspace/solutions-k8s-stateful-workload-operator"
+        entrypoint: "bash"
+        args:
+          - -xc
+          - |
+            [[ ! -f /workspace/iap_timeout ]] && echo "echo: IAP is ready, skipping wait-for-iap-2" && exit 0
+
+            CLIENT_ID=$$(gcloud secrets versions access 1 --secret broker-oauth2-client-id)
+            ENDPOINT="https://${_NAME}.endpoints.${PROJECT_ID}.cloud.goog/broker/"
+
+            # Wait for up to 20 minutes for IAP.
+            timeout 1200 bash ./setup/scripts/wait_for_iap.sh broker@${PROJECT_ID}.iam.gserviceaccount.com $${CLIENT_ID} $${ENDPOINT}
+        waitFor:
+          - fix-autoneg

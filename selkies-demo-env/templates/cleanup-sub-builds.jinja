@@ -1,0 +1,37 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+resources:
+###
+# Cleanup sub-builds created by Cloud Build across subsequent runs.
+###
+- name: {{ env["name"] }}
+  type: gcp-types/cloudbuild-v1:cloudbuild.projects.builds.create
+  metadata:
+    dependsOn: {{ properties['dependsOn'] }}
+  properties:
+    substitutions:
+      _TAGS_FILTER: "{{ properties["build-tags-filter"] }}"
+    tags:
+      - {{ env["name"] }}
+    timeout: "300s"
+    steps:
+      - name: "gcr.io/cloud-builders/git"
+        id: cleanup-sub-builds
+        entrypoint: bash
+        args:
+        - -c
+        - |
+            gcloud -q builds list --ongoing --filter='tags[]~${_TAGS_FILTER}' --format='value(id)' | \
+            xargs --no-run-if-empty gcloud -q builds cancel >/dev/null

@@ -1,0 +1,127 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+resources:
+###
+# Deploy App Launcher
+###
+- name: {{ env["name"] }}
+  type: gcp-types/cloudbuild-v1:cloudbuild.projects.builds.create
+  metadata:
+    dependsOn: {{ properties['dependsOn'] }}
+  properties:
+    substitutions:
+      _USER: {{ properties["userName"] }}
+      _REGION: {{ properties["region"] }}
+      _APP_LAUNCHER_BRANCH: "{{ properties["launcher-branch"] }}"
+      _EXAMPLES_BRANCH: "{{ properties["examples-branch"] }}"
+      _WEBRTC_BRANCH: "{{ properties["webrtc-branch"] }}"
+    tags:
+      - selkies-demo-infra
+    timeout: "3600s"
+    steps:
+      ###
+      # Clone the app launcher repo
+      ###
+      - name: "gcr.io/cloud-builders/git"
+        id: app-launcher-repo
+        args:
+          - clone
+          - https://github.com/GoogleCloudPlatform/solutions-k8s-stateful-workload-operator.git
+          - -b
+          - ${_APP_LAUNCHER_BRANCH}
+        waitFor: ["-"]
+
+      ###
+      # Clone the examples repo
+      ###
+      - name: "gcr.io/cloud-builders/git"
+        id: examples-repo
+        args:
+          - clone
+          - https://github.com/GoogleCloudPlatform/solutions-k8s-stateful-workload-operator-examples.git
+          - -b
+          - ${_EXAMPLES_BRANCH}
+        waitFor: ["-"]
+      
+      ###
+      # Clone the webrtc repo
+      ###
+      - name: "gcr.io/cloud-builders/git"
+        id: webrtc-repo
+        args:
+          - clone
+          - https://github.com/GoogleCloudPlatform/solutions-webrtc-gpu-streaming.git
+          - -b
+          - ${_WEBRTC_BRANCH}
+        waitFor: ["-"]
+      
+      ###
+      # Add tfvars to set initial auto-scaling parameters
+      ###
+      - name: "gcr.io/cloud-builders/gcloud"
+        id: autoscaling-tfvars
+        dir: /workspace/solutions-k8s-stateful-workload-operator
+        entrypoint: bash
+        args:
+          - -exc
+          - |
+            cat - > setup/infra/node-pool-apps/cluster.auto.tfvars <<EOF
+            tier1_pool_min_node_count = 1
+            tier2_pool_machine_type = "n1-standard-16"
+            EOF
+            cat - > setup/infra/node-pool-gpu/cluster.auto.tfvars <<EOF
+            gpu_cos_pool_min_node_count = 1
+            EOF
+        waitFor:
+          - app-launcher-repo
+
+      ###
+      # Deploy app launcher
+      ###
+      - name: "gcr.io/cloud-builders/gcloud"
+        id: deploy-app-launcher
+        dir: /workspace/solutions-k8s-stateful-workload-operator
+        args:
+          - builds
+          - submit
+          - --substitutions=_USER=${_USER},_REGION=${_REGION},_WAIT_FOR_IAP=false
+        waitFor:
+          - app-launcher-repo
+          - autoscaling-tfvars
+      
+      ###
+      # Create autoscaling cronjob.
+      ###
+      - name: "gcr.io/cloud-builders/kubectl"
+        id: install-autoscaling-cronjob
+        dir: /workspace/solutions-k8s-stateful-workload-operator
+        entrypoint: "bash"
+        args:
+          - "-ec"
+          - |
+            # 8AM PST
+            SCALE_UP="0 15 * * *"
+            # 5PM PST
+            SCALE_DOWN="0 0 * * *"
+
+            echo "Creating cronjob to autoscale nodepools between 8AM-5PM PST" 
+
+            ./setup/scripts/create_autoscaling_cronjob.sh tier1 1 10 "$$SCALE_UP" "$$SCALE_DOWN" ${_REGION}
+            ./setup/scripts/create_autoscaling_cronjob.sh gpu-cos 1 10 "$$SCALE_UP" "$$SCALE_DOWN" ${_REGION}
+        env:
+          - "PROJECT_ID=${PROJECT_ID}"
+          - "CLOUDSDK_CORE_PROJECT=${PROJECT_ID}"
+          - "CLOUDSDK_COMPUTE_REGION=${_REGION}"
+          - "CLOUDSDK_CONTAINER_CLUSTER=broker-${_REGION}"

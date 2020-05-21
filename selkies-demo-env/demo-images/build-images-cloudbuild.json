@@ -1,0 +1,151 @@
+{
+  "substitutions": {
+    "_EXAMPLES_BRANCH": "master",
+    "_WEBRTC_BRANCH": "v1.4.0"
+  },
+  "tags": [
+    "selkies-demo-images"
+  ],
+  "timeout": "5400s",
+  "options": {
+    "machineType": "N1_HIGHCPU_8"
+  },
+  "steps": [
+    {
+      "name": "gcr.io/cloud-builders/git",
+      "id": "examples-repo",
+      "args": [
+        "clone",
+        "https://github.com/GoogleCloudPlatform/solutions-k8s-stateful-workload-operator-examples.git",
+        "-b",
+        "${_EXAMPLES_BRANCH}"
+      ],
+      "waitFor": [
+        "-"
+      ]
+    },
+    {
+      "name": "gcr.io/cloud-builders/git",
+      "id": "webrtc-repo",
+      "args": [
+        "clone",
+        "https://github.com/GoogleCloudPlatform/solutions-webrtc-gpu-streaming.git",
+        "-b",
+        "${_WEBRTC_BRANCH}"
+      ],
+      "waitFor": [
+        "-"
+      ]
+    },
+    {
+      "name": "gcr.io/cloud-builders/gcloud",
+      "id": "build-webrtc-images",
+      "dir": "/workspace/solutions-webrtc-gpu-streaming/images",
+      "args": [
+        "builds",
+        "submit",
+        "--substitutions=_USE_CACHE=false"
+      ],
+      "waitFor": [
+        "webrtc-repo"
+      ]
+    },
+    {
+      "name": "gcr.io/cloud-builders/gcloud",
+      "id": "build-blender-images",
+      "dir": "/workspace/solutions-k8s-stateful-workload-operator-examples/blender/images",
+      "args": [
+        "builds",
+        "submit",
+        "--substitutions=_USE_CACHE=false"
+      ],
+      "waitFor": [
+        "examples-repo",
+        "build-webrtc-images"
+      ]
+    },
+    {
+      "name": "gcr.io/cloud-builders/gcloud",
+      "id": "build-code-server-images",
+      "dir": "/workspace/solutions-k8s-stateful-workload-operator-examples/code-server/images",
+      "args": [
+        "builds",
+        "submit",
+        "--substitutions=_USE_CACHE=false"
+      ],
+      "waitFor": [
+        "examples-repo"
+      ]
+    },
+    {
+      "name": "gcr.io/cloud-builders/gcloud",
+      "id": "build-supertuxkart-images",
+      "dir": "/workspace/solutions-k8s-stateful-workload-operator-examples/supertuxkart/images",
+      "args": [
+        "builds",
+        "submit",
+        "--substitutions=_USE_CACHE=false"
+      ],
+      "waitFor": [
+        "examples-repo",
+        "build-webrtc-images"
+      ]
+    },
+    {
+      "name": "gcr.io/cloud-builders/gcloud",
+      "id": "build-unigine-heaven-images",
+      "dir": "/workspace/solutions-k8s-stateful-workload-operator-examples/unigine-heaven/images",
+      "args": [
+        "builds",
+        "submit",
+        "--substitutions=_USE_CACHE=false"
+      ],
+      "waitFor": [
+        "examples-repo",
+        "build-webrtc-images"
+      ]
+    },
+    {
+      "name": "gcr.io/cloud-builders/gcloud",
+      "id": "build-unigine-valley-images",
+      "dir": "/workspace/solutions-k8s-stateful-workload-operator-examples/unigine-valley/images",
+      "args": [
+        "builds",
+        "submit",
+        "--substitutions=_USE_CACHE=false"
+      ],
+      "waitFor": [
+        "examples-repo",
+        "build-webrtc-images"
+      ]
+    },
+    {
+      "name": "gcr.io/cloud-builders/gcloud",
+      "id": "build-unreal-car-configurator-images",
+      "dir": "/workspace/solutions-k8s-stateful-workload-operator-examples/unreal-car-configurator/images",
+      "args": [
+        "builds",
+        "submit",
+        "--substitutions=_USE_CACHE=false"
+      ],
+      "waitFor": [
+        "examples-repo",
+        "build-webrtc-images"
+      ]
+    },
+    {
+      "name": "gcr.io/cloud-builders/gcloud",
+      "id": "build-xonotic-images",
+      "dir": "/workspace/solutions-k8s-stateful-workload-operator-examples/xonotic/images",
+      "args": [
+        "builds",
+        "submit",
+        "--substitutions=_USE_CACHE=false"
+      ],
+      "waitFor": [
+        "examples-repo",
+        "build-webrtc-images"
+      ]
+    }
+  ]
+}

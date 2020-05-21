@@ -1,0 +1,74 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+resources:
+###
+# Elevate cloud build service account permissions to project Owner
+# This is done using the keyFile passed by the qlapi.
+# https://github.com/ricky-watson-g/qwiklabs-deployment-manager-examples/blob/master/examples/elevate_permissions/readme.md
+###
+- name: {{ env["name"] }}
+  action: gcp-types/cloudbuild-v1:cloudbuild.projects.builds.create
+  metadata:
+    runtimePolicy:
+    - UPDATE_ALWAYS
+  properties:
+    tags:
+      - elevate-ql-cb-permissions
+    steps:
+    - name: registry.hub.docker.com/gcptraining/ql-cloudbuild-gcloud:2.0
+      args:
+      - {{ env['project'] }}
+      - {{ properties['region'] }}
+      - {{ properties['zone'] }}
+      - '{{ properties['keyFile'] }}'
+      - projects
+      - add-iam-policy-binding
+      - {{ env['project'] }} 
+      - --member 
+      - serviceAccount:{{ env['project_number'] }}@cloudbuild.gserviceaccount.com
+      - --role
+      - roles/owner
+    - name: registry.hub.docker.com/gcptraining/ql-cloudbuild-gcloud:2.0
+      args:
+      - {{ env['project'] }}
+      - {{ properties['region'] }}
+      - {{ properties['zone'] }}
+      - '{{ properties['keyFile'] }}'
+      - projects
+      - add-iam-policy-binding
+      - {{ env['project'] }} 
+      - --member 
+      - serviceAccount:{{ env['project_number'] }}@cloudbuild.gserviceaccount.com
+      - --role
+      - roles/resourcemanager.projectIamAdmin
+    ###
+    # Grant cloud build SA token creator role
+    # this is used by the cloud build steps to connect through IAP and verify that the load balancer is working.
+    ###
+    - name: registry.hub.docker.com/gcptraining/ql-cloudbuild-gcloud:2.0
+      args:
+      - {{ env['project'] }}
+      - {{ properties['region'] }}
+      - {{ properties['zone'] }}
+      - '{{ properties['keyFile'] }}'
+      - projects
+      - add-iam-policy-binding
+      - {{ env['project'] }} 
+      - --member 
+      - serviceAccount:{{ env['project_number'] }}@cloudbuild.gserviceaccount.com
+      - --role
+      - roles/iam.serviceAccountTokenCreator
+    timeout: 120s

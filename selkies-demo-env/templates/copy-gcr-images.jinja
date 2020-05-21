@@ -1,0 +1,195 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+resources:
+###
+# Copy pre-built GCR images
+###
+- name: {{ env["name"] }}
+  type: gcp-types/cloudbuild-v1:cloudbuild.projects.builds.create
+  properties:
+    tags:
+      - {{ env["name"] }}
+    substitutions:
+      _SRC_IMAGE_PROJECT: {{ properties["src-project"] }}
+      _DEST_IMAGE_PROJECT: {{ properties["dest-project"] }}
+    timeout: "3600s"
+    options:
+      machineType: "N1_HIGHCPU_32"
+    steps:
+      ###
+      # Copy image script
+      ###
+      - name: "gcr.io/cloud-builders/gcloud"
+        id: create-script
+        entrypoint: bash
+        args:
+          - -ec
+          - |
+            cat - | tee /workspace/copy_gcr.sh <<'EOF'
+            #!/bin/bash -x
+            [[ {{ "$${#IMAGES[*]}" }} -eq 0 ]] && echo "ERROR: missing env: IMAGES" && exit 1
+            for image in $${IMAGES[*]}; do
+              SRC_IMAGE=$(echo -n $$image | sed 's|PROJECT_ID|${_SRC_IMAGE_PROJECT}|g')
+              DEST_IMAGE=$(echo -n $$image | sed 's|PROJECT_ID|${_DEST_IMAGE_PROJECT}|g')
+              if [[ "$${SRC_IMAGE}" == "$${DEST_IMAGE}" ]]; then
+                echo "INFO: Verifying image exists: $$DEST_IMAGE"
+                gcloud -q container images describe $$DEST_IMAGE
+                [[ $? -ne 0 ]] && echo "ERROR: image not found: $$DEST_IMAGE" && exit 1
+                continue
+              fi
+              count=0
+              while [[ $count -lt 10 ]]; do
+                gcloud -q container images add-tag $$SRC_IMAGE $$DEST_IMAGE
+                [[ $? -eq 0 ]] && break
+                ((count=count+1))
+                sleep 2
+              done
+              [[ $count -ge 10 ]] && exit 1
+            done
+            exit 0
+            EOF
+            chmod +x /workspace/copy_gcr.sh
+
+      ###
+      # webrtc images
+      ###
+      - name: "gcr.io/cloud-builders/gcloud"
+        id: copy-webrtc-images
+        waitFor: ["create-script"]
+        entrypoint: bash
+        args:
+          - -xc
+          - |
+            export IMAGES=(
+              gcr.io/PROJECT_ID/webrtc-gpu-streaming-gst-base:latest
+              gcr.io/PROJECT_ID/webrtc-gpu-streaming-gst-webrtc-app:latest
+              gcr.io/PROJECT_ID/webrtc-gpu-streaming-gst-web:latest
+              gcr.io/PROJECT_ID/webrtc-gpu-streaming-signaling:latest
+              gcr.io/PROJECT_ID/webrtc-gpu-streaming-desktop:latest
+              gcr.io/PROJECT_ID/webrtc-gpu-streaming-xserver:latest
+              gcr.io/PROJECT_ID/webrtc-gpu-streaming-pulseaudio:latest
+              gcr.io/PROJECT_ID/webrtc-gpu-streaming-app-streaming:latest
+              gcr.io/PROJECT_ID/webrtc-gpu-streaming-xpra:latest
+              gcr.io/PROJECT_ID/webrtc-gpu-streaming-nvidia-gpu-device-plugin:latest
+            )
+            . /workspace/copy_gcr.sh
+
+      ###
+      # blender images
+      ###
+      - name: "gcr.io/cloud-builders/gcloud"
+        id: copy-blender-images
+        waitFor: ["create-script"]
+        entrypoint: bash
+        args:
+          - -xc
+          - |
+            export IMAGES=(
+              gcr.io/PROJECT_ID/vdi-blender:latest
+            )
+            . /workspace/copy_gcr.sh
+
+      ###
+      # code-server images
+      ###
+      - name: "gcr.io/cloud-builders/gcloud"
+        id: copy-code-server-images
+        waitFor: ["create-script"]
+        entrypoint: bash
+        args:
+          - -xc
+          - |
+            export IMAGES=(
+              gcr.io/PROJECT_ID/code-server-gke-code-server-cloudshell:latest
+              gcr.io/PROJECT_ID/code-server-gke-tinyfilemanager:latest
+            )
+            . /workspace/copy_gcr.sh
+
+      ###
+      # supertuxkart images
+      ###
+      - name: "gcr.io/cloud-builders/gcloud"
+        id: copy-supertuxkart-images
+        waitFor: ["create-script"]
+        entrypoint: bash
+        args:
+          - -xc
+          - |
+            export IMAGES=(
+              gcr.io/PROJECT_ID/vdi-supertuxkart-server:latest
+              gcr.io/PROJECT_ID/vdi-supertuxkart:latest
+            )
+            . /workspace/copy_gcr.sh
+
+      ###
+      # unigine-heaven images
+      ###
+      - name: "gcr.io/cloud-builders/gcloud"
+        id: copy-unigine-heaven-images
+        waitFor: ["create-script"]
+        entrypoint: bash
+        args:
+          - -xc
+          - |
+            export IMAGES=(
+              gcr.io/PROJECT_ID/vdi-unigine-heaven:latest
+            )
+            . /workspace/copy_gcr.sh
+
+      ###
+      # unigine-valley images
+      ###
+      - name: "gcr.io/cloud-builders/gcloud"
+        id: copy-unigine-valley-images
+        waitFor: ["create-script"]
+        entrypoint: bash
+        args:
+          - -xc
+          - |
+            export IMAGES=(
+              gcr.io/PROJECT_ID/vdi-unigine-valley:latest
+            )
+            . /workspace/copy_gcr.sh
+
+      ###
+      # unreal-car-configurator images
+      ###
+      - name: "gcr.io/cloud-builders/gcloud"
+        id: copy-unreal-car-configurator-images
+        waitFor: ["create-script"]
+        entrypoint: bash
+        args:
+          - -xc
+          - |
+            export IMAGES=(
+              gcr.io/PROJECT_ID/vdi-wine-base:latest
+              gcr.io/PROJECT_ID/vdi-unreal-carconfig:latest
+            )
+            . /workspace/copy_gcr.sh
+
+      ###
+      # xonotic images
+      ###
+      - name: "gcr.io/cloud-builders/gcloud"
+        id: copy-xonotic-images
+        waitFor: ["create-script"]
+        entrypoint: bash
+        args:
+          - -xc
+          - |
+            export IMAGES=(
+              gcr.io/PROJECT_ID/vdi-xonotic:latest
+            )
+            . /workspace/copy_gcr.sh
