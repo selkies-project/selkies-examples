@@ -1,0 +1,43 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+substitutions:
+  _REGION: us-west1
+  _NAMESPACE: pod-broker-system
+  _IMAGE: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-desktop
+  _PROXY_CIDR:
+  _EGRESS_PROXY:
+
+steps:
+  ###
+  # Deploy manifests to cluster.
+  ###
+  - name: "gcr.io/cloud-builders/kubectl"
+    id: deploy-manifests
+    entrypoint: "bash"
+    args:
+      - "-exc"
+      - |
+        sed \
+          -e 's/$${PROJECT_ID}/'${PROJECT_ID}'/g' \
+          -e 's/$${EGRESS_PROXY}/'${_EGRESS_PROXY}'/g' \
+          -e 's|$${IMAGE}|'${_IMAGE}'|g' \
+          -e 's|$${PROXY_CIDR}|'${_PROXY_CIDR}'|g' \
+            *-brokerappconfig.yaml | \
+          /builder/kubectl.bash apply -n ${_NAMESPACE} -f -
+    env:
+      - "PROJECT_ID=${PROJECT_ID}"
+      - "CLOUDSDK_CORE_PROJECT=${PROJECT_ID}"
+      - "CLOUDSDK_COMPUTE_REGION=${_REGION}"
+      - "CLOUDSDK_CONTAINER_CLUSTER=broker-${_REGION}"

@@ -1,0 +1,141 @@
+/**
+ * Copyright 2019 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+data "google_compute_subnetwork" "broker" {
+  project = var.project_id
+  name    = "broker-${var.region}"
+  region  = var.region
+}
+
+data "template_file" "cloud-config" {
+  template = "${file("${path.module}/config/cloudconfig.yaml")}"
+  vars = {
+    PROJECT              = var.project_id
+    INTERNAL_NET_GATEWAY = data.google_compute_subnetwork.broker.gateway_address
+  }
+}
+
+data "google_service_account" "proxy" {
+  account_id = "broker-proxy"
+}
+
+locals {
+  proxy_name = "${var.name}-proxy-${var.region}"
+}
+
+resource "google_compute_instance_template" "proxy" {
+  name_prefix  = "${local.proxy_name}-"
+  project      = var.project_id
+  machine_type = var.machine_type
+  labels       = {}
+  metadata     = map("user-data", data.template_file.cloud-config.rendered)
+  region       = var.region
+  disk {
+    source_image = "cos-cloud/cos-stable"
+    auto_delete  = true
+    boot         = true
+    disk_size_gb = 25
+  }
+
+  service_account {
+    email  = data.google_service_account.proxy.email
+    scopes = ["cloud-platform"]
+  }
+
+  network_interface {
+    network    = data.google_compute_subnetwork.broker.network
+    subnetwork = data.google_compute_subnetwork.broker.name
+    access_config {
+      nat_ip       = ""
+      network_tier = "PREMIUM"
+    }
+  }
+
+  tags = [
+    "${var.name}-proxy",
+    local.proxy_name
+  ]
+
+  lifecycle {
+    create_before_destroy = "true"
+  }
+}
+
+module "mig" {
+  source            = "terraform-google-modules/vm/google//modules/mig"
+  version           = "~> 2.1.0"
+  project_id        = var.project_id
+  instance_template = google_compute_instance_template.proxy.self_link
+  region            = var.region
+  hostname          = local.proxy_name
+  target_size       = var.instance_count
+  named_ports = [
+    {
+      name = "http",
+      port = 3128
+    }
+  ]
+  network    = data.google_compute_subnetwork.broker.network
+  subnetwork = data.google_compute_subnetwork.broker.self_link
+}
+
+resource "google_compute_firewall" "proxy" {
+  project = var.project_id
+  name    = local.proxy_name
+  network = data.google_compute_subnetwork.broker.network
+
+  allow {
+    protocol = "tcp"
+    ports    = ["3128"]
+  }
+
+  target_tags = [local.proxy_name]
+
+  # Allow traffic from regional CIDR and all secondary GKE ranges.
+  source_ranges = concat(list(data.google_compute_subnetwork.broker.ip_cidr_range), data.google_compute_subnetwork.broker.secondary_ip_range.*.ip_cidr_range)
+}
+
+resource "google_compute_forwarding_rule" "proxy" {
+  project               = var.project_id
+  name                  = local.proxy_name
+  region                = var.region
+  load_balancing_scheme = "INTERNAL"
+  backend_service       = google_compute_region_backend_service.proxy.self_link
+  all_ports             = true
+  network               = data.google_compute_subnetwork.broker.network
+  subnetwork            = data.google_compute_subnetwork.broker.name
+}
+
+resource "google_compute_region_backend_service" "proxy" {
+  project       = var.project_id
+  name          = local.proxy_name
+  region        = var.region
+  health_checks = [google_compute_health_check.proxy.self_link]
+
+  backend {
+    group = module.mig.instance_group
+  }
+}
+
+resource "google_compute_health_check" "proxy" {
+  project            = var.project_id
+  name               = local.proxy_name
+  check_interval_sec = 1
+  timeout_sec        = 1
+  tcp_health_check {
+    port = "3128"
+  }
+}

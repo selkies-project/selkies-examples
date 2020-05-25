@@ -1,0 +1,42 @@
+#cloud-configs
+
+users:
+  - name: cloudservice
+    uid: 2000
+
+write_files:
+  - path: /etc/systemd/system/cloudservice.service
+    permissions: 0644
+    owner: root
+    content: |
+      [Unit]
+      Description=Start a simple docker container
+      Wants=gcr-online.target
+      After=gcr-online.target
+
+      [Service]
+      Environment="HOME=/home/cloudservice"
+      ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
+      ExecStart=/usr/bin/docker run --name mycloudservice --net=host --volume /var/run/docker/squid/cache:/var/spool/squid --volume /var/log/squid:/var/log/squid gcr.io/${PROJECT}/vdi-squid:latest
+      ExecStop=/usr/bin/docker stop mycloudservice
+      ExecStopPost=/usr/bin/docker rm mycloudservice
+
+bootcmd:
+  # add private google access resolving for gcr.io. and storage.googleapis.com so that squid container can be pulled on boot.
+  - echo 199.36.153.4 gcr.io gcr.io. storage.googleapis.com. >> /etc/hosts
+  - echo 199.36.153.5 gcr.io gcr.io. storage.googleapis.com. >> /etc/hosts
+  - echo 199.36.153.6 gcr.io gcr.io. storage.googleapis.com. >> /etc/hosts
+  - echo 199.36.153.7 gcr.io gcr.io. storage.googleapis.com. >> /etc/hosts
+  # add static route for internal metadata server
+  - ip route add 169.254.169.254 via ${INTERNAL_NET_GATEWAY} dev eth0
+  # add static routes to send private google access traffic through management interface.
+  - ip route add 199.36.153.4/30 via ${INTERNAL_NET_GATEWAY} dev eth0
+
+runcmd:
+  # Enable IP forwarding and allow access to proxy
+  - sysctl -w net.ipv4.ip_forward=1
+  - sed -i= 's/^[# ]*net.ipv4.ip_forward=[[:digit:]]/net.ipv4.ip_forward=1/g' /etc/sysctl.conf
+  - iptables -A INPUT -p tcp -m tcp --dport 3128 -j ACCEPT
+  # Start squid proxy service
+  - systemctl daemon-reload
+  - systemctl start cloudservice.service
