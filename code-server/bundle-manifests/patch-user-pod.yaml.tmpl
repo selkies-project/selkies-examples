@@ -33,6 +33,8 @@ spec:
       initContainers:
       - name: persist-init
         env:
+          - name: CODE_SERVER_USER
+            value: "{{.User}}"
           - name: CODE_SERVER_DOMAIN
             value: "{{.AppParams.Domain}}"
           - name: CODE_SERVER_WEB_PREVIEW_3000
