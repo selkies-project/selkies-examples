@@ -56,11 +56,10 @@ spec:
           securityContext:
             runAsUser: 1000
             privileged: false
-          command:
-            - /usr/local/bin/code-server
-            - --auth=none
-            - --bind-addr=0.0.0.0:3180
-            - --disable-updates
+          command: ["/tini"]
+          args:
+            - "--"
+            - "/usr/share/code-server/entrypoint.sh"
           volumeMounts:
             - name: persist
               mountPath: /home/coder

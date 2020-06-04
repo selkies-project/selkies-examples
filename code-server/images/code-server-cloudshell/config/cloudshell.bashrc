@@ -16,7 +16,7 @@ unset DEVSHELL_CLIENT_DIR
 unset DEVSHELL_CLIENTS_DIR
 unset CREDENTIALS_SERVICE_PORT
 
-export DOCKER_HOST="tcp://127.0.0.1:2376"
+export DOCKER_HOST="tcp://localhost:2376"
 export DOCKER_TLS="true"
 export DOCKER_CERT_PATH="/var/run/docker-certs"
 

@@ -20,11 +20,17 @@ FROM gcr.io/cloudshell-images/cloudshell:latest
 COPY --from=code-server /usr/lib/code-server /usr/lib/code-server
 RUN ln -s /usr/lib/code-server/bin/code-server /usr/local/bin/code-server
 
+# Add Tini
+ARG TINI_VERSION=v0.19.0
+ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini-amd64 /tini
+RUN chmod +x /tini
+
 # Install additional tools
 RUN apt-get install -y \
     bsdtar \
 	apt-transport-https \
-	gdebi-core
+	gdebi-core \
+    socat
 
 # Install ffmpeg-xpra
 RUN curl -o ffmpeg-xpra.deb -L https://www.xpra.org/dists/stretch/main/binary-amd64/ffmpeg-xpra_4.0-1_amd64.deb && \
@@ -76,4 +82,4 @@ ENV SHELL /bin/bash
 ENV USER coder
 ENV DISPLAY :0
 
-ENTRYPOINT ["/usr/local/bin/code-server", "--auth=none", "--bind-addr=0.0.0.0:3180", "--disable-updates"]
+ENTRYPOINT ["/tini", "--", "/usr/share/code-server/entrypoint.sh"]
