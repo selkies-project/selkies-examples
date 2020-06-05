@@ -56,10 +56,7 @@ spec:
           securityContext:
             runAsUser: 1000
             privileged: false
-          command: ["/tini"]
-          args:
-            - "--"
-            - "/usr/share/code-server/entrypoint.sh"
+          command: ["/tini", "--", "/usr/share/code-server/entrypoint.sh"]
           volumeMounts:
             - name: persist
               mountPath: /home/coder

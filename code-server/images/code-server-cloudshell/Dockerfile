@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG CODE_SERVER_BASE=codercom/code-server:3.2.0
+ARG CODE_SERVER_BASE=codercom/code-server:3.4.1
 FROM ${CODE_SERVER_BASE} as code-server
 
 FROM gcr.io/cloudshell-images/cloudshell:latest

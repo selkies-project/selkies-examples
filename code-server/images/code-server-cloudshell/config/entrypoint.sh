@@ -21,4 +21,4 @@ echo "INFO: Docker sidecar is ready, starting unix socket proxy"
 sudo /usr/share/code-server/start-docker-unix-proxy.sh
 
 echo "INFO: Starting code-server"
-exec /usr/local/bin/code-server --auth=none --bind-addr=0.0.0.0:3180 --disable-updates
+exec /usr/local/bin/code-server --auth=none --bind-addr=0.0.0.0:3180
