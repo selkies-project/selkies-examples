@@ -1,0 +1,58 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+substitutions:
+  _REGION: us-west1
+
+steps:
+  ###
+  # Install PV for Filestore NFS.
+  ###
+  - name: "google/cloud-sdk:alpine"
+    id: filestore-pv-values
+    dir: /workspace
+    entrypoint: bash
+    args:
+      - "-ec"
+      - |
+        TFSTATE=$(gsutil cat gs://${PROJECT_ID}-broker-tf-state/broker/broker-filestore.tfstate 2>/dev/null || exit 0)
+        [[ -z "$${TFSTATE}" ]] && echo "INFO: No filestore instance found, skipping PV creation." && exit 0
+        apk add -u jq gettext
+        export FILESTORE_NAME=$(echo "$${TFSTATE}" | jq -r '.outputs."filestore-name".value')
+        [[ "$${FILESTORE_NAME}" == "null" ]] && echo "ERROR: No filestore found in tfstate" && exit 1
+
+        export FILESTORE_IP=$(echo "$${TFSTATE}" | jq -r '.outputs."filestore-ip".value')
+        export FILESTORE_SIZE_GB=$(echo "$${TFSTATE}" | jq -r '.outputs."filestore-size-gb".value')
+        export FILESTORE_SHARE=$(echo "$${TFSTATE}" | jq -r '.outputs."filestore-share".value')
+        cat filestore-pv.yaml | envsubst | tee filestore-pv-subst.yaml
+  ###
+  # Deploy manifests to cluster.
+  ###
+  - name: "gcr.io/cloud-builders/kubectl"
+    id: deploy-manifests
+    entrypoint: "bash"
+    args:
+      - "-exc"
+      - |
+        if [[ -f filestore-pv-subst.yaml ]]; then
+          echo "INFO: Applying Filestore PV"
+          /builder/kubectl.bash apply -f filestore-pv-subst.yaml
+        else
+          echo "INFO: Skipping filestore PV creation."
+        fi
+    env:
+      - "PROJECT_ID=${PROJECT_ID}"
+      - "CLOUDSDK_CORE_PROJECT=${PROJECT_ID}"
+      - "CLOUDSDK_COMPUTE_REGION=${_REGION}"
+      - "CLOUDSDK_CONTAINER_CLUSTER=broker-${_REGION}"
