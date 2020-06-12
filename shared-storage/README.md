@@ -6,13 +6,10 @@ This example shows how to use the shared storage feature of the WebRTC Streaming
 
 The following BrokerAppConfig appParams apply to shared storage:
 
- - `enableSharedStorage`: `true` or `false` to enable shared storage feature. Default: `false`
- - `sharedStorageClass`: name of the storageclass. Default: `""`.
- - `sharedVolumeMode`: Access mode for volume. Default: `ReadWriteMany`.
- - `sharedVolumeName`: Name of PersistentVolume to attach claim to, not applicable if using `sharedStorageClass` and dynamic provisioning. Default: `""`.
- - `sharedStorageSize`: Size of the storage request. Default: `1Gi`.
- - `sharedStorageMountPath`: Mount path in the desktop container to mount the shared volume subpath to. Default: `/mnt/shared`.
- - `sharedStorageSubPath`: Subpath within the shared volume to provision, an initContainer will set the appropriate permissions on this subpath. Use this to separate tenants across multiple apps on the same shared volume. Default: `data`. 
+ - `enableSharedStorageNFS`: `true` or `false` to enable shared storage with NFS feature. Default: `false`
+ - `sharedStorageNFSSize`: Size of the storage request. Default: `1Gi`.
+ - `sharedStorageNFSMountPath`: Mount path in the desktop container to mount the shared volume subpath to. Default: `/mnt/shared`.
+ - `sharedStorageNFSSubPath`: Subpath within the shared volume to provision, an initContainer will set the appropriate permissions on this subpath. Use this to separate tenants across multiple apps on the same shared volume. Default is the app name. 
 
 > Important: at this time, only one type of shared storage is supported per app. If you switch between shared storage types, you must first delete the PVC created for the user before it will be re-created with the new type.
 
@@ -42,19 +39,37 @@ Cons:
 (cd manifests && gcloud builds submit)
 ```
 
-3. Modify your BrokerAppConfig with the following AppParams:
+3. Get the IP address of the Filestore instance:
+
+```bash
+PROJECT_ID=$(gcloud config get-value project)
+```
+
+```bash
+gsutil cat gs://${PROJECT_ID?}-broker-tf-state/broker/broker-filestore.tfstate | jq -r '.outputs."filestore-ip".value'
+```
+
+4. Modify your BrokerAppConfig with the following AppParams to enabled the shared volume and persist the home directory to NFS:
 
 ```
 appParams:
-  - name: enableSharedStorage
+  - name: enableSharedStorageNFS
     default: "true"
-  - name: sharedVolumeName
-    default: "broker-shared-storage-us-west1-a"
-  - name: sharedStorageMountPath
+  - name: sharedStorageNFSSize
+    default: "10Gi"
+  - name: sharedStorageNFSMountPath
     default: "/mnt/shared"
-  - name: sharedStorageSubPath
-    default: "app1"
+  - name: sharedStorageNFSServer
+    default: "FILESTORE_IP"
+  - name: sharedStorageNFSShare
+    default: "/data"
+  - name: enablePersistence
+    default: "true"
+  - name: persistStorageClass
+    default: "broker-shared-filestore"
 ```
+
+> NOTE: replace `FILESTORE_IP` with the IP of your Filestore instance obtained earlier.
 
 4. Launch the app and verify that the mount at /mnt/shared is 1TB in size and that you can write to it.
 
@@ -84,11 +99,11 @@ kind: Namespace
 metadata:
   name: rook-nfs
 ---
-# A default storageclass must be present
+# Note that the backing PV will use the default storage class
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: nfs-default-claim
+  name: broker-shared-rook
   namespace: rook-nfs
 spec:
   accessModes:
@@ -100,35 +115,33 @@ spec:
 apiVersion: nfs.rook.io/v1alpha1
 kind: NFSServer
 metadata:
-  name: rook-nfs
+  name: broker-shared-rook
   namespace: rook-nfs
 spec:
   serviceAccountName: rook-nfs
   replicas: 1
   exports:
-    - name: share1
+    - name: data
       server:
         accessMode: ReadWrite
         squash: "none"
       # A Persistent Volume Claim must be created before creating NFS CRD instance.
       persistentVolumeClaim:
-        claimName: nfs-default-claim
+        claimName: broker-shared-rook
 EOF
 ```
 
-3. Create a new StorageClass to enable dynamic provisioning:
+3. Create a new StorageClass to enable dynamic provisioning of per-user persistent home directory storage:
 
 ```
 cat - | kubectl apply -f - <<EOF
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
-  labels:
-    app: rook-nfs
-  name: rook-nfs-share1
+  name: broker-shared-rook
 parameters:
-  exportName: share1
-  nfsServerName: rook-nfs
+  exportName: data
+  nfsServerName: broker-shared-rook
   nfsServerNamespace: rook-nfs
 provisioner: rook.io/nfs-provisioner
 reclaimPolicy: Delete
@@ -136,21 +149,39 @@ volumeBindingMode: Immediate
 EOF
 ```
 
-4. Modify your BrokerAppConfig with the following AppParams:
+4. Obtain the IP of the Rook pod:
+
+```bash
+kubectl get endpoints broker-shared-rook -n rook-nfs -o jsonpath='{.subsets..addresses..ip}'
+```
+
+5. Modify your BrokerAppConfig with the following AppParams to enabled the shared volume and persist the home directory to NFS:
 
 ```
 appParams:
-  - name: enableSharedStorage
+  - name: enableSharedStorageNFS
     default: "true"
-  - name: sharedStorageClass
-    default: "rook-nfs-share1"
-  - name: sharedStorageMountPath
+  - name: sharedStorageNFSSize
+    default: "10Gi"
+  - name: sharedStorageNFSMountPath
     default: "/mnt/shared"
-  - name: sharedStorageSubPath
-    default: "app1"
+  - name: sharedStorageNFSServer
+    default: "ROOK_IP"
+  - name: sharedStorageNFSShare
+    default: "/broker-shared-rook"
+  - name: enablePersistence
+    default: "true"
+  - name: persistStorageClass
+    default: "broker-shared-rook"
+  - name: persistStorageSize
+    default: "10Gi"
+  - name: persistStorageSubPath
+    default: "USER"
 ```
 
-5. Launch the app and verify that the /mnt/shared directory is 10gig in size and that you can write to it.
+> NOTE: Replace `ROOK_IP` with the IP of the rook pod obtained earlier.
+
+6. Launch the app and verify that the /mnt/shared directory is 10gig in size and that you can write to it.
 
 ## Shared read-only persistent disk
 
@@ -162,7 +193,7 @@ Cons:
   - Data is read-only.
   - Disk must be created in same zone(s) as node(s).
 
-### Read-only PD tutorial
+### WIP - Read-only PD tutorial
 
 1. Create a persistent disk in the same zone as the GKE nodes.
 2. Create a new PersistentVolume that attaches to the existing disk.
@@ -193,18 +224,18 @@ EOF
 
 ```
 appParams:
-  - name: enableSharedStorage
+  - name: enableSharedStorageROPD
     default: "true"
-  - name: sharedVolumeName
+  - name: sharedVolumeNameROPD
     default: "broker-shared-ro-pd-us-west1-a"
-  - name: sharedStorageMountPath
+  - name: sharedStorageMountPathROPD
     default: "/mnt/shared"
-  - name: sharedStorageSubPath
+  - name: sharedStorageSubPathROPD
     default: "var/lib"
-  - name: sharedVolumeMode
+  - name: sharedVolumeModeROPD
     default: "ReadOnlyMany"
 ```
 
-NOTE: the `sharedStoragePath` is a path relative to `/` on the disk.
+NOTE: the `sharedStorageSubPathROPD` is a path relative to `/` on the disk.
 
 4. Launch the app and verify that the contents of `/var/lib` is present on `/mnt/shared` and that the path is read only.
