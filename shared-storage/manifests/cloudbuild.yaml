@@ -35,7 +35,6 @@ steps:
         export FILESTORE_IP=$(echo "$${TFSTATE}" | jq -r '.outputs."filestore-ip".value')
         export FILESTORE_SIZE_GB=$(echo "$${TFSTATE}" | jq -r '.outputs."filestore-size-gb".value')
         export FILESTORE_SHARE=$(echo "$${TFSTATE}" | jq -r '.outputs."filestore-share".value')
-        cat filestore-pv.yaml | envsubst | tee filestore-pv.yaml
         cat nfs-client.yaml | envsubst | tee nfs-client-subst.yaml
   ###
   # Deploy manifests to cluster.
@@ -46,11 +45,6 @@ steps:
     args:
       - "-exc"
       - |
-        if [[ -f filestore-pv.yaml ]]; then
-          echo "INFO: Installing Filestore PersistentVolume"
-          /builder/kubectl.bash apply -f filestore-pv.yaml
-        fi
-
         if [[ -f nfs-client-subst.yaml ]]; then
           echo "INFO: Installing nfs-client dynamic provisioner"
           /builder/kubectl.bash apply -f nfs-client-subst.yaml
