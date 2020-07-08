@@ -1,14 +1,14 @@
 # Network Policy for filtering Pod Egress
 
-This tutorial shows how to filter traffic from a specific VDI container through an existing NAT gateway or firewall.
+This tutorial shows how to filter HTTP and HTTPS traffic from a specific VDI container through an existing HTTP proxy server.
 
 The request flow from the container looks like this:
 
-    container > squid > optional firewall appliance
+    container > squid transparent proxy sidecar > external squid cache peer instance.
 
-A Squid HTTP/S proxy is used so that the the firewall appliance can perform SSL decryption on just egress container traffic, not the whole GKE node.
+Squid is used as a sidecar to enable transparent proxy through an external server. This is useful for traffic filtering and inspection with minimal workload modifications.
 
-A NetworkPolicy is applied to the entire VDI pod. This policy restricts Egress traffic to only the proxy IP and allows traffic to the STUN/TURN services that the WebRTC sidecars require. 
+A NetworkPolicy is applied to the entire VDI pod. This policy restricts Egress traffic to only the allowed egress CIDRs and allows traffic to the STUN/TURN services that the WebRTC sidecars require.
 
 ## Build the squid proxy image
 
@@ -74,7 +74,7 @@ PROXY_IP=$(gcloud compute forwarding-rules list --filter="name~broker-proxy-${RE
 2. Deploy the BrokerAppConfig that is configured to use the proxy:
 
 ```bash
-(cd manifests && gcloud builds submit --substitutions=_REGION=${REGION?},_PROXY_CIDR=${PROXY_IP?}/32,_EGRESS_PROXY=${PROXY_IP?}:3128)
+(cd manifests && gcloud builds submit --substitutions=_REGION=${REGION?},_PROXY_CIDR=${PROXY_IP?}/32,_EGRESS_PROXY=${PROXY_IP?}:3128,_PROXY_CACHE_PEER=${PROXY_IP?})
 ```
 
 3. From the app launcher, launch the "Proxy Egress Desktop" app.
@@ -82,7 +82,8 @@ PROXY_IP=$(gcloud compute forwarding-rules list --filter="name~broker-proxy-${RE
 4. From a terminal in the streaming session check the external IP address of the container:
 
 ```bash
-curl -k https://jsonip.com
+curl http://ipinfo.io
+curl https://ipinfo.io
 ```
 
 > NOTE: if your firewall appliance already has SSL decryption enabled, you will see a certificate error without the `-k` option.

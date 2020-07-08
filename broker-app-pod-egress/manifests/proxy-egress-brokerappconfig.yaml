@@ -83,27 +83,29 @@ spec:
       default: "600" # seconds
     - name: enableRecording
       default: "false"
-    - name: egressProxyCIDR # CIDR range for egress proxy network policy.
+    - name: enableEgressPolicy # enable pod egress network policy
+      default: "false"
+    - name: egressCIDRRanges # allow access to the squid proxy instance
       default: "${PROXY_CIDR}"
+    - name: enableSquidProxy # enable transparent squid proxy.
+      default: "true"
+    - name: squidExtraConf # enable cache_peer to external proxy.
+      default: "cache_peer ${PROXY_CACHE_PEER} parent 3128 0 default"
     #- name: recordingFramerate # recording framerate, lower uses less space and CPU.
     #  default: "15"
     #- name: recordingBitrate # recording bitrate in kbps
     #  default: "500"
     #- name: enableClipboard # enable one-way clipboard.
     #  default: "in"
-  appEnv:
-    - name: http_proxy
-      value: "${EGRESS_PROXY}"
-    - name: https_proxy
-      value: "${EGRESS_PROXY}"
-    #- name: XPRA_ENTRYPOINT
-    #  value: "xfdesktop --sm-client-disable -A"
-    #- name: XPRA_CLIPBOARD_DIRECTION # Values are to-server|to-client|both
-    #  value: "both"
-    #- name: XPRA_FILE_TRANSFER
-    #  value: "on"
-    #- name: XPRA_OPEN_FILES
-    #  value: "on"
+  #appEnv:
+  #- name: XPRA_ENTRYPOINT
+  #  value: "xfdesktop --sm-client-disable -A"
+  #- name: XPRA_CLIPBOARD_DIRECTION # Values are to-server|to-client|both
+  #  value: "both"
+  #- name: XPRA_FILE_TRANSFER
+  #  value: "on"
+  #- name: XPRA_OPEN_FILES
+  #  value: "on"
   defaultTier: gpu
   nodeTiers:
     - name: gpu

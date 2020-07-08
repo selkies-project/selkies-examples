@@ -18,7 +18,7 @@ substitutions:
   _IMAGE: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-desktop
   _PROXY_CIDR:
   _EGRESS_PROXY:
-
+  _PROXY_CACHE_PEER:
 steps:
   ###
   # Deploy manifests to cluster.
@@ -34,6 +34,7 @@ steps:
           -e 's/$${EGRESS_PROXY}/'${_EGRESS_PROXY}'/g' \
           -e 's|$${IMAGE}|'${_IMAGE}'|g' \
           -e 's|$${PROXY_CIDR}|'${_PROXY_CIDR}'|g' \
+          -e 's|$${PROXY_CACHE_PEER}|'${_PROXY_CACHE_PEER}'|g' \
             *-brokerappconfig.yaml | \
           /builder/kubectl.bash apply -n ${_NAMESPACE} -f -
     env:

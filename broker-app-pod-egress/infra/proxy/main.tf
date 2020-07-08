@@ -55,6 +55,8 @@ resource "google_compute_instance_template" "proxy" {
     scopes = ["cloud-platform"]
   }
 
+  can_ip_forward = true
+
   network_interface {
     network    = data.google_compute_subnetwork.broker.network
     subnetwork = data.google_compute_subnetwork.broker.name
@@ -86,6 +88,10 @@ module "mig" {
     {
       name = "http",
       port = 3128
+    },
+    {
+      name = "tproxy"
+      port = 3129
     }
   ]
   network    = data.google_compute_subnetwork.broker.network
@@ -99,7 +105,6 @@ resource "google_compute_firewall" "proxy" {
 
   allow {
     protocol = "tcp"
-    ports    = ["3128"]
   }
 
   target_tags = [local.proxy_name]
@@ -137,5 +142,27 @@ resource "google_compute_health_check" "proxy" {
   timeout_sec        = 1
   tcp_health_check {
     port = "3128"
+  }
+}
+
+data "google_compute_region_instance_group" "proxy" {
+  self_link = module.mig.instance_group
+}
+
+resource "google_compute_route" "proxy-nat" {
+  name              = "${local.proxy_name}-nat"
+  dest_range        = "0.0.0.0/0"
+  network           = data.google_compute_subnetwork.broker.network
+  next_hop_instance = data.google_compute_region_instance_group.proxy.instances[0].instance
+  priority          = 800
+
+  tags = [
+    "${local.proxy_name}-nat"
+  ]
+
+  lifecycle {
+    ignore_changes = [
+      next_hop_instance_zone
+    ]
   }
 }
