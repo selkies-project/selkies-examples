@@ -10,8 +10,9 @@ For convenience, the [demo zip file](https://storage.googleapis.com/cloud-soluti
 
 ## Dependencies
 
-- App Launcher: [v1.0.0+](https://github.com/GoogleCloudPlatform/solutions-k8s-stateful-workload-operator/tree/v1.0.0)
-- WebRTC Streaming Stack: [v1.4.0+](https://github.com/GoogleCloudPlatform/solutions-webrtc-gpu-streaming/tree/v1.4.0)
+- Selkies App Launcher: [v1.0.0+](https://github.com/GoogleCloudPlatform/selkies/tree/v1.0.0)
+- Selkies VDI add-on: [v1.4.0+](https://github.com/GoogleCloudPlatform/selkies-vdi/tree/v1.4.0)
+- Proton images: [v1.4.0+](https://github.com/GoogleCloudPlatform/selkies-vdi/tree/v1.4.0/images/proton)
 
 ## Features
 
@@ -20,7 +21,6 @@ For convenience, the [demo zip file](https://storage.googleapis.com/cloud-soluti
 
 ## Installed Software
 
-- Wine64
 - Unreal Engine car configurator demo
 
 ## Tutorials
@@ -48,13 +48,19 @@ This tutorial requires that you have already deployed the Kubernetes App Launche
 
 If you have not already deployed the operator, follow this Cloud Shell tutorial to do so:
 
-[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/GoogleCloudPlatform/solutions-k8s-stateful-workload-operator&cloudshell_git_branch=v1.0.0&cloudshell_tutorial=setup/README.md)
+[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/GoogleCloudPlatform/selkies&cloudshell_git_branch=v1.0.0&cloudshell_tutorial=setup/README.md)
 
 This tutorial requires that you have deployed the WebRTC streaming app launcher stack to the cluster.
 
 If you have not installed the WebRTC stack, follow this Cloud Shell tutorial to do so:
 
-[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/GoogleCloudPlatform/solutions-webrtc-gpu-streaming&cloudshell_git_branch=v1.0.0&&cloudshell_tutorial=tutorials/gke/00_Setup.md). 
+[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/GoogleCloudPlatform/selkies-vdi&cloudshell_git_branch=v1.0.0&&cloudshell_tutorial=tutorials/gke/00_Setup.md).
+
+Make sure you also build the proton images in the selkies-vdi repo:
+
+```
+(cd images/proton && gcloud builds submit)
+```
 
 ## Platform verification
 
@@ -104,7 +110,7 @@ Example output:
 1. Deploy manifests to the cluster:
 
 ```bash
-gcloud builds submit --substitutions=_REGION=${REGION?}
+(cd manifests && gcloud builds submit --substitutions=_REGION=${REGION?})
 ```
 
 2. Open the app launcher web interface and launch the app.

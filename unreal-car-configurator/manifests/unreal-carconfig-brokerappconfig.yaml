@@ -26,7 +26,7 @@ spec:
     configMapRef:
       name: webrtc-gpu-streaming-manifests-1.4.0
   serviceName: vdi
-  defaultRepo: gcr.io/${PROJECT_ID}/vdi-unreal-carconfig
+  defaultRepo: gcr.io/${PROJECT_ID}/vdi-proton-unreal-carconfig
   defaultTag: "latest"
   images:
     xserver:

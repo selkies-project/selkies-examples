@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG BASE_IMAGE=gcr.io/cloud-solutions-images/vdi-wine:latest
+ARG BASE_IMAGE=gcr.io/PROJECT_ID/vdi-proton-app:latest
 
 # Unpack the zip file in multi-stage build.
-FROM alpine:3.9
+FROM alpine:3.9 as extract
 RUN apk add -u unzip
 WORKDIR /tmp
 COPY CarconfiguratorV2.2.zip .
@@ -27,18 +27,14 @@ FROM ${BASE_IMAGE}
 
 RUN mkdir -p /home/app/Downloads/CarconfiguratorV2.2 && \
     chown app:app /home/app/Downloads/CarconfiguratorV2.2
-    
-COPY --from=0 /tmp/CarconfiguratorV2.2 /home/app/Downloads/CarconfiguratorV2.2/
 
-WORKDIR /home/app/Downloads/CarconfiguratorV2.2
+WORKDIR /opt/app/CarconfiguratorV2.2
+COPY --from=extract /tmp/CarconfiguratorV2.2 .
 
 # Set APP_PATH to tell base image entrypoint which program to run.
-ENV APP_PATH /home/app/Downloads/CarconfiguratorV2.2/WindowsNoEditor/Carfigurator.exe
+ENV APP_PATH /opt/app/CarconfiguratorV2.2/WindowsNoEditor/Carfigurator.exe
 
 # Set default resolution, configured by the entrypoint script in the base image.
 ENV RESOLUTION=1920x1080
-
-# Copy wine directory which includes all wine dependencies like gecko and mono
-ADD wine-dir.tar.gz /home/app/
 
 ENV ENABLE_WM=false

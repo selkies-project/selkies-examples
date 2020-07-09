@@ -16,52 +16,23 @@ timeout: 3600s
 
 substitutions:
   _USE_CACHE: "true"
-  _BASE_NAME: wine-base
   _APP_NAME: unreal-carconfig
-  _IMAGE_PREFIX: vdi
+  _IMAGE_PREFIX: vdi-proton
   _IMAGE_TAG: latest
   _CARCONFIG_GCS: gs://cloud-solutions-images-vdi/unreal-car-config/CarconfiguratorV2.2.zip
-  _WINE_LIBS_GCS: gs://cloud-solutions-images-vdi/unreal-car-config/wine-dir.tar.gz
-  
+
+tags:
+  - unreal-carconfig-image
+
 ###
 # Images to be pushed
 ###
 images: [
-    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-${_BASE_NAME}:${_IMAGE_TAG}',
-    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-${_BASE_NAME}:latest',
     'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-${_APP_NAME}:${_IMAGE_TAG}',
     'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-${_APP_NAME}:latest',
 ]
 
 steps:
-###
-# Base image
-###
-- name: 'gcr.io/cloud-builders/docker'
-  id: base-image-pull
-  entrypoint: 'bash'
-  args: ["-c", "if [[ '${_USE_CACHE}' == 'true' ]]; then (docker pull gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-${_BASE_NAME}:latest || exit 0); fi"]
-  waitFor: ["-"]
-- name: 'gcr.io/cloud-builders/docker'
-  id: base-image
-  args: [
-            'build',
-            '-t', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-${_BASE_NAME}:${_IMAGE_TAG}',
-            '--cache-from', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-${_BASE_NAME}:latest',
-            './base-image'
-        ]
-  waitFor:
-    - base-image-pull
-- name: 'gcr.io/cloud-builders/docker'
-  id: base-image-tags
-  args: [
-            'tag',
-            'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-${_BASE_NAME}:${_IMAGE_TAG}',
-            'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-${_BASE_NAME}:latest',
-        ]
-  waitFor:
-    - base-image
-
 ###
 # Copy assets
 ###
@@ -71,15 +42,6 @@ steps:
   args: [
             'cp',
             "${_CARCONFIG_GCS}",
-            '/workspace/${_APP_NAME}'
-        ]
-  waitFor: ["-"]
-- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:alpine'
-  id: 'copy-gcs-wine-dir'
-  entrypoint: "gsutil"
-  args: [
-            'cp',
-            "${_WINE_LIBS_GCS}",
             '/workspace/${_APP_NAME}'
         ]
   waitFor: ["-"]
@@ -98,13 +60,11 @@ steps:
             'build',
             '-t', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-${_APP_NAME}:${_IMAGE_TAG}',
             '--cache-from', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-${_APP_NAME}:latest',
-            '--build-arg', 'BASE_IMAGE=gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-${_BASE_NAME}:latest',
+            '--build-arg', 'BASE_IMAGE=gcr.io/${PROJECT_ID}/vdi-proton-app:latest',
             '${_APP_NAME}'
         ]
   waitFor:
-    - base-image-tags
     - copy-gcs-carconfig
-    - copy-gcs-wine-dir
     - image-pull
 - name: 'gcr.io/cloud-builders/docker'
   id: image-tags
