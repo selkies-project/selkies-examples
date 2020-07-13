@@ -53,6 +53,12 @@ function startIdle() {
   logInfo "watchdog timeout"
 }
 
+if [[ ${WATCHDOG_TIMEOUT?} -lt 0 ]]; then
+  logInfo "idle watchdog diabled because WATCHDOG_TIMEOUT < 0, spinning"
+  while true; do sleep 86400; done
+  exit 0
+fi
+
 logInfo "idle watchdog started, timeout: ${WATCHDOG_TIMEOUT?}"
 
 touch /run/guacamole/idle
