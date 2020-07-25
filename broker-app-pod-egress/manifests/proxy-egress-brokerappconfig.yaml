@@ -84,9 +84,9 @@ spec:
     - name: enableRecording
       default: "false"
     - name: enableEgressPolicy # enable pod egress network policy
-      default: "false"
+      default: "true"
     - name: egressCIDRRanges # allow access to the squid proxy instance
-      default: "${PROXY_CIDR}"
+      default: "${PROXY_CIDR},${CLUSTER_SVC_CIDR},${CLUSTER_POD_CIDR}"
     - name: enableSquidProxy # enable transparent squid proxy.
       default: "true"
     - name: squidExtraConf # enable cache_peer to external proxy.

@@ -21,6 +21,24 @@ substitutions:
   _PROXY_CACHE_PEER:
 steps:
   ###
+  #
+  ###
+  - name: "gcr.io/cloud-builders/gcloud"
+    id: fetch-cluster-cidrs
+    entrypoint: bash
+    args:
+      - "-exc"
+      - |
+        gcloud compute networks subnets describe broker-${_REGION} \
+          --region ${_REGION} \
+          --format='value(secondaryIpRanges[0].ipCidrRange)' | \
+            tee CLUSTER_POD_CIDR
+
+        gcloud compute networks subnets describe broker-${_REGION} \
+          --region ${_REGION} \
+          --format='value(secondaryIpRanges[1].ipCidrRange)' | \
+            tee CLUSTER_SVC_CIDR
+  ###
   # Deploy manifests to cluster.
   ###
   - name: "gcr.io/cloud-builders/kubectl"
@@ -35,6 +53,8 @@ steps:
           -e 's|$${IMAGE}|'${_IMAGE}'|g' \
           -e 's|$${PROXY_CIDR}|'${_PROXY_CIDR}'|g' \
           -e 's|$${PROXY_CACHE_PEER}|'${_PROXY_CACHE_PEER}'|g' \
+          -e 's|$${CLUSTER_POD_CIDR}|'`cat CLUSTER_POD_CIDR`'|g' \
+          -e 's|$${CLUSTER_SVC_CIDR}|'`cat CLUSTER_SVC_CIDR`'|g' \
             *-brokerappconfig.yaml | \
           /builder/kubectl.bash apply -n ${_NAMESPACE} -f -
     env:
