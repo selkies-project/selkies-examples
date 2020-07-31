@@ -1,0 +1,199 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: network-attachment-definitions.k8s.cni.cncf.io
+spec:
+  group: k8s.cni.cncf.io
+  scope: Namespaced
+  names:
+    plural: network-attachment-definitions
+    singular: network-attachment-definition
+    kind: NetworkAttachmentDefinition
+    shortNames:
+      - net-attach-def
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          description:
+            "NetworkAttachmentDefinition is a CRD schema specified by the Network Plumbing
+            Working Group to express the intent for attaching pods to one or more logical or physical
+            networks. More information available at: https://github.com/k8snetworkplumbingwg/multi-net-spec"
+          type: object
+          properties:
+            apiVersion:
+              description:
+                "APIVersion defines the versioned schema of this represen
+                tation of an object. Servers should convert recognized schemas to the
+                latest internal value, and may reject unrecognized values. More info:
+                https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources"
+              type: string
+            kind:
+              description:
+                "Kind is a string value representing the REST resource this
+                object represents. Servers may infer this from the endpoint the client
+                submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds"
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: "NetworkAttachmentDefinition spec defines the desired state of a network attachment"
+              type: object
+              properties:
+                config:
+                  description: "NetworkAttachmentDefinition config is a JSON-formatted CNI configuration"
+                  type: string
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: multus
+rules:
+  - apiGroups: ["k8s.cni.cncf.io"]
+    resources:
+      - "*"
+    verbs:
+      - "*"
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+      - pods/status
+    verbs:
+      - get
+      - update
+  - apiGroups:
+      - ""
+      - events.k8s.io
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+      - update
+  - apiGroups:
+      - ""
+    resources:
+      - nodes
+    verbs:
+      - get
+      - list
+      - patch
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: multus
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: multus
+subjects:
+  - kind: ServiceAccount
+    name: multus
+    namespace: kube-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: multus
+  namespace: kube-system
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: kube-multus-ds-amd64
+  namespace: kube-system
+  labels:
+    tier: node
+    app: multus
+    name: multus
+spec:
+  selector:
+    matchLabels:
+      name: multus
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        tier: node
+        app: multus
+        name: multus
+    spec:
+      hostNetwork: true
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      tolerations:
+        - operator: Exists
+          effect: NoSchedule
+      serviceAccountName: multus
+      terminationGracePeriodSeconds: 5
+      containers:
+        - name: kube-multus
+          image: nfvpe/multus:v3.4.1
+          command: ["/entrypoint.sh"]
+          args:
+            - "--multus-conf-file=auto"
+            - "--cni-version=0.3.1"
+            - "--cni-conf-dir=/host/etc/cni/net.d"
+            - "--cni-bin-dir=/host/opt/cni/bin"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "50Mi"
+            limits:
+              cpu: "100m"
+              memory: "50Mi"
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: cni
+              mountPath: /host/etc/cni/net.d
+            - name: cnibin
+              mountPath: /host/opt/cni/bin
+        - name: add-node-label
+          image: debian:10
+          command: ["/bin/bash"]
+          args:
+            - -ec
+            - |
+              echo "INFO: Waiting for Multus CNI install to complete"
+              until [[ -f /host/etc/cni/net.d/00-multus.conflist ]]; do sleep 1; done
+              echo "INFO: Multus install complete, adding node label."
+              /host/opt/cni/bin/kubectl label node "${MY_NODE_NAME}" --overwrite multus.intel.github.io/ds-ready=true
+              while true; do sleep 86400; done
+          env:
+            - name: MY_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          volumeMounts:
+            - name: cni
+              mountPath: /host/etc/cni/net.d
+            - name: cnibin
+              mountPath: /host/opt/cni/bin
+      volumes:
+        - name: cni
+          hostPath:
+            path: /etc/cni/net.d
+        - name: cnibin
+          hostPath:
+            path: /home/kubernetes/bin

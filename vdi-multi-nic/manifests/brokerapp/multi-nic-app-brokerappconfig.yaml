@@ -1,0 +1,65 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: gcp.solutions/v1
+kind: BrokerAppConfig
+metadata:
+  name: multi-nic-app
+spec:
+  version: 1.0.0
+  name: multi-nic-app
+  displayName: Multi NIC App
+  description: App with multiple network interfaces
+  icon: https://i.vimeocdn.com/portrait/21106887_120x120.jpg
+  bundle:
+    configMapRef:
+      name: webrtc-gpu-streaming-manifests-1.4.0
+  serviceName: vdi
+  defaultRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-xpra
+  defaultTag: "latest"
+  images:
+    pulseaudio:
+      oldRepo: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-pulseaudio
+      newRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-pulseaudio
+      newTag: latest
+    gst-webrtc-app:
+      oldRepo: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-gst-webrtc-app
+      newRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-gst-webrtc-app
+      newTag: latest
+    xpra:
+      oldRepo: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-xpra
+      newRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-xpra
+      newTag: latest
+  appParams:
+    - name: idleShutdownTimeout
+      default: "3600" # seconds
+    - name: enableXpra
+      default: "true"
+    - name: isolatedNetworkCIDR
+      default: "10.32.20.0/24"
+    - name: enableIsolatedNetwork
+      default: "true"
+  appEnv:
+    - name: XPRA_ENTRYPOINT
+      value: "sudo apt install -y iputils-ping net-tools traceroute && xfce4-terminal -H"
+    - name: XPRA_HTML5_DEFAULT_SETTINGS
+      value: "floating_menu = true\\nvideo = false\\nsound = false\\nencoding = jpeg\\nautohide = true"
+  disableOptions: true
+  defaultTier: standard
+  nodeTiers:
+    - name: standard
+      nodeLabel: tier1
+      resources:
+        requests:
+          cpu: 500m

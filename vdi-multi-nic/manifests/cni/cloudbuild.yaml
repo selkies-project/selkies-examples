@@ -1,0 +1,59 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+timeout: 300s
+substitutions:
+  _ACTION: apply
+  _NAME: broker
+  _REGION: us-west1
+tags:
+  - vdi-multi-nic-cni
+steps:
+  ###
+  # Build and patch weave yaml
+  ###
+  - name: "gcr.io/cloud-builders/kubectl"
+    id: build-weave-gke
+    dir: weave-net
+    entrypoint: "/bin/bash"
+    args:
+      - "-exc"
+      - |
+        # Download weave release
+        # NOTE: fetching install manifest with EXPECT_NPC=0 to disable network policy controller, using Calico instead.
+        K8S_VERSION=$(/builder/kubectl.bash version | base64 | tr -d '\n')
+        curl -s -o base/weave.yaml "https://cloud.weave.works/k8s/net?k8s-version=$${K8S_VERSION}&env.EXPECT_NPC=0"
+
+        # Use Kustomize to remove items from List structure
+        kubectl kustomize base/ > weave-gke.yaml
+    env:
+      - "PROJECT_ID=${PROJECT_ID}"
+      - "CLOUDSDK_CORE_PROJECT=${PROJECT_ID}"
+      - "CLOUDSDK_COMPUTE_REGION=${_REGION}"
+      - "CLOUDSDK_CONTAINER_CLUSTER=${_NAME}-${_REGION}"
+
+  ###
+  # Deploy manifests to cluster
+  ###
+  - name: "gcr.io/cloud-builders/kubectl"
+    id: deploy-manifests
+    args:
+      - "${_ACTION}"
+      - "-k"
+      - "."
+    env:
+      - "PROJECT_ID=${PROJECT_ID}"
+      - "CLOUDSDK_CORE_PROJECT=${PROJECT_ID}"
+      - "CLOUDSDK_COMPUTE_REGION=${_REGION}"
+      - "CLOUDSDK_CONTAINER_CLUSTER=broker-${_REGION}"

@@ -1,0 +1,77 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+###
+# Remove the weave-npc container
+###
+- op: remove
+  path: "/spec/template/spec/containers/1"
+
+###
+# Add docker volume to facilitate forced reset
+###
+- op: add
+  path: "/spec/template/spec/volumes/-"
+  value:
+    name: docker
+    hostPath:
+      path: /var/run/docker.sock
+      type: File
+
+###
+# Patch weave-net container to force reset.
+###
+- op: replace
+  path: "/spec/template/spec/containers/0/command"
+  value: ["/bin/sh"]
+- op: replace
+  path: "/spec/template/spec/containers/0/args"
+  value:
+    - -xc
+    - |
+      ./weave --local reset --force
+      exec /home/weave/launch.sh
+- op: add
+  path: "/spec/template/spec/containers/0/volumeMounts/-"
+  value:
+    name: docker
+    mountPath: /var/run/docker.sock
+
+###
+# Patch pod to add node labeler conatiner
+###
+- op: add
+  path: "/spec/template/spec/containers/-"
+  value:
+    name: add-node-label
+    image: debian:10
+    command: ["/bin/bash"]
+    args:
+      - -ec
+      - |
+        echo "INFO: Waiting for Weave Net CNI install to complete"
+        until [[ -f /host/etc/cni/net.d/10-weave.conflist ]]; do sleep 1; done
+        echo "INFO: Weave Net install complete, adding node label."
+        /host/home/kubernetes/bin/kubectl label node "${MY_NODE_NAME}" --overwrite weave.works/ds-ready=true
+        while true; do sleep 86400; done
+    env:
+      - name: MY_NODE_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: spec.nodeName
+    volumeMounts:
+      - name: cni-conf
+        mountPath: /host/etc
+      - name: cni-bin2
+        mountPath: /host/home
