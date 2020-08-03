@@ -30,6 +30,17 @@
       type: File
 
 ###
+# Add shared volume in pod to isolate the /etc/cni/net.d directory.
+# NOTE: we want to bypass the 10-weave.conflist because Multus will handle the confs.
+#       leaving this on the filesystem causes a race condition with the primart CNI driver.
+###
+- op: add
+  path: "/spec/template/spec/volumes/-"
+  value:
+    name: shared
+    emptyDir: {}
+
+###
 # Patch weave-net container to force reset.
 ###
 - op: replace
@@ -47,6 +58,11 @@
   value:
     name: docker
     mountPath: /var/run/docker.sock
+- op: add
+  path: "/spec/template/spec/containers/0/volumeMounts/-"
+  value:
+    name: shared
+    mountPath: /host/etc/cni/net.d
 
 ###
 # Patch pod to add node labeler conatiner
@@ -62,8 +78,10 @@
       - |
         echo "INFO: Waiting for Weave Net CNI install to complete"
         until [[ -f /host/etc/cni/net.d/10-weave.conflist ]]; do sleep 1; done
+
         echo "INFO: Weave Net install complete, adding node label."
         /host/home/kubernetes/bin/kubectl label node "${MY_NODE_NAME}" --overwrite weave.works/ds-ready=true
+
         while true; do sleep 86400; done
     env:
       - name: MY_NODE_NAME
@@ -71,7 +89,7 @@
           fieldRef:
             fieldPath: spec.nodeName
     volumeMounts:
-      - name: cni-conf
-        mountPath: /host/etc
+      - name: shared
+        mountPath: /host/etc/cni/net.d
       - name: cni-bin2
         mountPath: /host/home
