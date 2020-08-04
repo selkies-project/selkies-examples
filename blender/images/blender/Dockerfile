@@ -21,4 +21,7 @@ RUN \
     sudo apt-get update && sudo apt-get install -y \
     blender
 
-ENV EXEC_CMD /usr/bin/blender
+COPY start_blender.sh /
+RUN chmod +x /start_blender.sh
+
+ENV EXEC_CMD /start_blender.sh
