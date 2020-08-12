@@ -40,6 +40,14 @@ spec:
         - name: docker-certs
           emptyDir:
             sizeLimit: 128Mi
+        ###
+        # shared memory mount
+        # used to bypass default container runtime of 64MB
+        ###
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 1Gi
       initContainers:
         - name: persist-init
           image: gcr.io/cloud-solutions-images/code-server-gke-code-server-cloudshell:latest
@@ -68,6 +76,9 @@ spec:
             - name: docker-certs
               mountPath: /var/run/docker-certs
               subPath: client
+            # increased shared memory mount
+            - name: dshm
+              mountPath: /dev/shm
           ports:
             - name: code
               containerPort: 3180
@@ -99,7 +110,6 @@ spec:
         ###
         - name: tinyfilemanager
           image: gcr.io/cloud-solutions-images/code-server-gke-tinyfilemanager:latest
-          imagePullPolicy: Always
           ports:
             - name: http
               containerPort: 3181
@@ -124,7 +134,6 @@ spec:
           securityContext:
             privileged: true
           image: docker:19.03.2-dind
-          imagePullPolicy: Always
           env:
             - name: DOCKER_TLS_CERTDIR
               value: /var/run/docker-certs
