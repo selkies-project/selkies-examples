@@ -20,6 +20,6 @@ name=$1
 
 [[ -z "$name" ]] && echo "USAGE: $0 <app name>" && exit 1
 
-CURR_CONFIG=$(kubectl get brokerappconfig -n pod-broker-system $(basename $name) -o yaml)
+CURR_CONFIG=$(kubectl get brokerappconfig -n pod-broker-system $(basename $name) -o json)
 
-echo "${CURR_CONFIG}" | sed -e 's/latest/fixed/g' | kubectl apply -f -
+echo "${CURR_CONFIG}" | sed -e 's/latest/fixed/g' | jq -r 'del(.metadata.annotations["kubectl.kubernetes.io/last-applied-configuration"])' | kubectl apply -f -
