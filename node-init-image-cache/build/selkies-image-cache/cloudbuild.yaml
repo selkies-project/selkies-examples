@@ -21,6 +21,7 @@ substitutions:
   _PROVISION_MACHINE_TYPE: n1-standard-16
   _SOURCE_IMAGE_FAMILY: ubuntu-2004-lts
   _DISK_SIZE_GB: "256"
+  _PULL_ALL_GCR: "true"
   _ADDITIONAL_IMAGES: "" # comma-separated list of additional images to pull
 tags:
   - selkies-image-cache-image
@@ -123,6 +124,7 @@ steps:
               "execute_command": "sudo -S bash -exc '{{ .Vars }} {{ .Path }}'",
               "environment_vars": [
                 "PROJECT_ID=${PROJECT_ID}",
+                "PULL_ALL_GCR=${_PULL_ALL_GCR}",
                 "ADDITIONAL_IMAGES=${_ADDITIONAL_IMAGES}"
               ]
             }

@@ -69,7 +69,7 @@ DISK_SIZE_GB=256
 
 > NOTE: you can include other images by providing the build substitution: `--substitutions=_ADDITIONAL_IMAGES="image1,image2..."`
 
-> NOTE: This step takes about 20 minutes to complete.
+> NOTE: This step pulls __all__ GCR images found in the project that have a `latest` tag and takes about 20 minutes to complete.
 
 3. Create persistent disk from image:
 
@@ -108,6 +108,12 @@ spec:
       oldRepo: gcr.io/cloud-solutions-images/code-server-gke-tinyfilemanager
       newRepo: gcr.io/${PROJECT_ID}/code-server-gke-tinyfilemanager
       newTag: fixed
+```
+
+Using the helper script to convert all apps:
+
+```bash
+kubectl get brokerappconfig -n pod-broker-system -o name | xargs -I {} ./convert_brokerapp_to_fixed.sh {}
 ```
 
 2. After modifying your BrokerAppConfig, refresh the App Launcher and launch your app.
