@@ -20,6 +20,9 @@ name=$1
 
 [[ -z "$name" ]] && echo "USAGE: $0 <app name>" && exit 1
 
+echo "INFO: Updating $name"
+
 CURR_CONFIG=$(kubectl get brokerappconfig -n pod-broker-system $(basename $name) -o json)
 
-echo "${CURR_CONFIG}" | sed -e 's/latest/fixed/g' | jq -r 'del(.metadata.annotations["kubectl.kubernetes.io/last-applied-configuration"])' | kubectl apply -f -
+# NOTE: deleting resouceVersion because of CRD update issue: https://github.com/kubernetes/kubernetes/issues/70674
+echo "${CURR_CONFIG}" | sed 's/latest/fixed/g' | jq -r 'del(.metadata.resourceVersion)' | kubectl replace --force -f - >/dev/null
