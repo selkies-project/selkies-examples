@@ -1,0 +1,72 @@
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+timeout: 600s
+substitutions:
+  _DISK_NAME_PREFIX: selkies-image-cache
+  _DISK_ZONE: us-west1-a
+  _REGION: us-west1
+
+tags:
+  - pod-broker-image-loader-manifests
+steps:
+  ###
+  # Lookup the disk name and timestamp
+  ###
+  - name: gcr.io/cloud-builders/gcloud
+    id: disk-name
+    entrypoint: bash
+    args:
+      - -exc
+      - |
+        gcloud compute disks list \
+          --filter=name~${_DISK_NAME_PREFIX}-${_DISK_ZONE} \
+          --sort-by=~creationTimestamp \
+          --limit 1 \
+          --format='value(name)' | cut -f1 | tee pd_name
+
+        cat pd_name | awk -F- '{print $$NF}' | tee pd_ts
+
+  ###
+  # Deploy manifests to cluster.
+  # NOTE: using pre-loaded cos-nvidia-installer:fixed image on gpu nodes to avoid an additional image pull.
+  # TODO: Find a way to make this work on all node pool types, not just GPU nodes.
+  ###
+  - name: "gcr.io/cloud-builders/kubectl"
+    id: deploy-manifests
+    entrypoint: "bash"
+    args:
+      - "-exc"
+      - "-o"
+      - "pipefail"
+      - |
+        for item in tier1,alpine:3.9 gpu-cos,cos-nvidia-installer:fixed; do
+          IFS="," read -ra toks <<< "$$item"
+          TIER=$${toks[0]}
+          LOADER_IMAGE=$${toks[1]}
+
+          kubectl.1.17 kustomize | \
+            sed \
+              -e 's/$${PROJECT_ID}/'${PROJECT_ID}'/g' \
+              -e 's/$${PD_NAME}/'$(cat pd_name)'/g' \
+              -e 's/$${TS}/'$(cat pd_ts)'/g' \
+              -e 's/$${TIER}/'$${TIER}'/g' \
+              -e 's|$${LOADER_IMAGE}|'$${LOADER_IMAGE}'|g' | \
+          /builder/kubectl.bash apply -f -
+        done
+    env:
+      - "PROJECT_ID=${PROJECT_ID}"
+      - "CLOUDSDK_CORE_PROJECT=${PROJECT_ID}"
+      - "CLOUDSDK_COMPUTE_REGION=${_REGION}"
+      - "CLOUDSDK_CONTAINER_CLUSTER=broker-${_REGION}"
