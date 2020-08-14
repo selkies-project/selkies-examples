@@ -20,7 +20,6 @@ spec:
   template:
     spec:
       nodeSelector:
-        app.broker/initialized: "true"
         app.broker/tier: {{ .NodeTier.NodeLabel }}
         cloud.google.com/gke-nodepool: "{{ .NodeTier.NodeLabel }}"
       tolerations:
