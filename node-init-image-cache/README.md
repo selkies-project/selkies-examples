@@ -8,9 +8,14 @@ Many of the Selkies images are large, >1GB, this increases the initial node star
 
 This optimization is implemented using a DaemonSet with the read-only persistent disk mounted as a volume claim.
 
-The DaemonSet loads an empty image with a single layer to the host Docker daemon. The empty layer is then replaced with the actual read-only image contents on the persistent disk using an overlayfs mount.
-An empty layer is used to inject the real layers into a running Docker daemon. If the original layers were just mounted to the filesystem, the daemon would have to be restarted before it would recognize them.
-Using a custom layer allows the DaemonSet to inject the image to a running daemon and then replace the contents with the actual layers contents. 
+The DaemonSet does the following on host:
+
+1. Creates bind mounts for all of the layers found on the persistent disk into the `/var/lib/docker/overlay2` layer cache directory.
+2. Mounts an overlayfs on top of `/var/lib/docker/image` that merges the directory on the host with the directory on the persistent disk.
+3. Merges the `/var/lib/docker/image/overlay2/repositories.json` with the host and persistent disk json files using `jq`. This makes all the new images visible for example when when running `docker images`.
+4. Restarts the docker daemon by running `systemctl restart docker`, this forces docker to reload the layer and image cache, fully registering the injected images.
+
+> NOTE: this approach is not stable across node reboots as the layer filesystem mounts are not persistent.
 
 ![Diagram](./image-cache-diagram.png)
 
@@ -67,7 +72,7 @@ DISK_SIZE_GB=256
 (cd build/selkies-image-cache && gcloud builds submit --project=${PROJECT_ID} --substitutions=_PROVISION_ZONE=${ZONE},_DISK_SIZE_GB=${DISK_SIZE_GB})
 ```
 
-> NOTE: you can include other images by providing the build substitution: `--substitutions=_ADDITIONAL_IMAGES="image1,image2..."`
+> NOTE: you can include other images by adding them to the file: `build/selkies-image-cache/scripts/image_list.txt`
 
 > NOTE: This step pulls __all__ GCR images found in the project that have a `latest` tag and takes about 20 minutes to complete.
 
@@ -91,36 +96,7 @@ REGION=us-west1
 
 > NOTE: this creates 2 DaemonSets, one for the gpu-cos node pool and other for the tier1 node pool. The gpu-cos DaemonSet uses the pre-installed `cos-nvidia-installer:fixed` image, which only exists on nodes with GPUs attached.
 
-## Modifying your BrokerAppConfigs
-
-1. Modify your BrokerAppConfig specs to use images with the `fixed` tag like in the example below:
-
-```yaml
-spec:
-  defaultRepo: gcr.io/${PROJECT_ID}/code-server-gke-code-server-cloudshell
-  defaultTag: fixed
-  images:
-    cloudshell:
-      oldRepo: gcr.io/cloud-solutions-images/code-server-gke-code-server-cloudshell
-      newRepo: gcr.io/${PROJECT_ID}/code-server-gke-code-server-cloudshell
-      newTag: fixed
-    tinyfilemanager:
-      oldRepo: gcr.io/cloud-solutions-images/code-server-gke-tinyfilemanager
-      newRepo: gcr.io/${PROJECT_ID}/code-server-gke-tinyfilemanager
-      newTag: fixed
-```
-
-Using the helper script to convert all apps:
-
-```bash
-kubectl get brokerappconfig -n pod-broker-system -o name | xargs -I {} ./convert_brokerapp_to_fixed.sh {}
-```
-
-2. After modifying your BrokerAppConfig, refresh the App Launcher and launch your app.
-
-3. Verify that your pod launched and that it's using the `:fixed` tagged images.
-
-## Updating fixed images
+## Updating image cache
 
 With this approach for image caching, updating cached images can be more difficult.
 

@@ -20,8 +20,8 @@ set -x
 # Use GCE apt servers
 GCE_ZONE=$(curl -H Metadata-Flavor:Google http://metadata/computeMetadata/v1/instance/zone | cut -d/ -f4)
 GCE_REGION=${GCE_ZONE%-*}
-cp /etc/apt/sources.list /etc/apt/sources.list.orig && \
-    sed -i "s/archive.ubuntu.com/${GCE_REGION}.gce.archive.ubuntu.com/g" /etc/apt/sources.list
+grep -q "${GCE_REGION}.gce.archive.ubuntu.com" /etc/apt/sources.list || (cp /etc/apt/sources.list /etc/apt/sources.list.orig && \
+    sed -i "s/archive.ubuntu.com/${GCE_REGION}.gce.archive.ubuntu.com/g" /etc/apt/sources.list)
 
 # Install google cloud SDK
 echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list

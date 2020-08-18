@@ -17,6 +17,12 @@ kind: Kustomization
 
 namespace: pod-broker-system
 
+configMapGenerator:
+  - name: image-loader
+    files:
+      - inject-images.sh
+
 resources:
   - pod-broker-image-cache-pv.yaml
-  - pod-broker-image-loader-ds.yaml
+  - pod-broker-image-loader-gpu-cos-ds.yaml
+  - pod-broker-image-loader-tier1-ds.yaml

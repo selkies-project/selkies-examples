@@ -22,7 +22,7 @@ substitutions:
   _SOURCE_IMAGE_FAMILY: ubuntu-2004-lts
   _DISK_SIZE_GB: "256"
   _PULL_ALL_GCR: "true"
-  _ADDITIONAL_IMAGES: "" # comma-separated list of additional images to pull
+  _USE_LAST_IMAGE: "true"
 tags:
   - selkies-image-cache-image
 steps:
@@ -85,6 +85,8 @@ steps:
     args:
       - "-ec"
       - |
+        SRC_IMAGE_FAMILY="${_SOURCE_IMAGE_FAMILY}"
+        [[ "${_USE_LAST_IMAGE}" == "true" ]] && SRC_IMAGE_FAMILY="${_APPNAME}"
         cat - | tee packer.json <<EOF
         {
           "builders": [
@@ -96,7 +98,7 @@ steps:
                 "machine_type": "${_PROVISION_MACHINE_TYPE}",
                 "disk_size": "${_DISK_SIZE_GB}",
                 "disk_type": "pd-ssd",
-                "source_image_family": "${_SOURCE_IMAGE_FAMILY}",
+                "source_image_family": "$${SRC_IMAGE_FAMILY}",
                 "image_name": "${_APPNAME}-{{timestamp}}",
                 "image_family": "${_APPNAME}",
                 "ssh_username": "ubuntu",
@@ -124,8 +126,7 @@ steps:
               "execute_command": "sudo -S bash -exc '{{ .Vars }} {{ .Path }}'",
               "environment_vars": [
                 "PROJECT_ID=${PROJECT_ID}",
-                "PULL_ALL_GCR=${_PULL_ALL_GCR}",
-                "ADDITIONAL_IMAGES=${_ADDITIONAL_IMAGES}"
+                "PULL_ALL_GCR=${_PULL_ALL_GCR}"
               ]
             }
           ]

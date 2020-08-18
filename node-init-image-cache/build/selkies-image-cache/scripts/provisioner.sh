@@ -23,7 +23,7 @@ SCRIPT_DIR=$(dirname $(readlink -f $0 2>/dev/null) 2>/dev/null || echo "${PWD}/$
 ${SCRIPT_DIR}/install_docker_ubuntu2004.sh
 
 # Pull images
-${SCRIPT_DIR}/pull_docker_images.sh
+${SCRIPT_DIR}/pull_docker_images.sh ${SCRIPT_DIR}/image_list.txt
 
 # Remove installer files
 [[ ${SCRIPT_DIR} != "/" ]] && rm -rf ${SCRIPT_DIR}

@@ -40,8 +40,6 @@ steps:
 
   ###
   # Deploy manifests to cluster.
-  # NOTE: using pre-loaded cos-nvidia-installer:fixed image on gpu nodes to avoid an additional image pull.
-  # TODO: Find a way to make this work on all node pool types, not just GPU nodes.
   ###
   - name: "gcr.io/cloud-builders/kubectl"
     id: deploy-manifests
@@ -51,20 +49,12 @@ steps:
       - "-o"
       - "pipefail"
       - |
-        for item in tier1,alpine:3.9 gpu-cos,cos-nvidia-installer:fixed; do
-          IFS="," read -ra toks <<< "$$item"
-          TIER=$${toks[0]}
-          LOADER_IMAGE=$${toks[1]}
-
-          kubectl.1.17 kustomize | \
-            sed \
-              -e 's/$${PROJECT_ID}/'${PROJECT_ID}'/g' \
-              -e 's/$${PD_NAME}/'$(cat pd_name)'/g' \
-              -e 's/$${TS}/'$(cat pd_ts)'/g' \
-              -e 's/$${TIER}/'$${TIER}'/g' \
-              -e 's|$${LOADER_IMAGE}|'$${LOADER_IMAGE}'|g' | \
-          /builder/kubectl.bash apply -f -
-        done
+        kubectl.1.17 kustomize | \
+          sed \
+            -e 's/$${PROJECT_ID}/'${PROJECT_ID}'/g' \
+            -e 's/$${PD_NAME}/'$(cat pd_name)'/g' \
+            -e 's/$${TS}/'$(cat pd_ts)'/g' | \
+        /builder/kubectl.bash apply -f -
     env:
       - "PROJECT_ID=${PROJECT_ID}"
       - "CLOUDSDK_CORE_PROJECT=${PROJECT_ID}"

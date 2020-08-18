@@ -1,0 +1,145 @@
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+kind: DaemonSet
+apiVersion: apps/v1
+metadata:
+  name: pod-broker-image-loader-gpu-cos-${TS}
+  namespace: pod-broker-system
+  labels:
+    app: pod-broker-image-loader
+spec:
+  selector:
+    matchLabels:
+      app: pod-broker-image-loader
+  template:
+    metadata:
+      labels:
+        app: pod-broker-image-loader
+    spec:
+      serviceAccountName: pod-broker
+
+      terminationGracePeriodSeconds: 2
+
+      # Use host network to avoid wating for cni to initialize.
+      hostNetwork: true
+
+      nodeSelector:
+        app.broker/tier: "gpu-cos"
+
+      # Only run on nodes that will host broker apps.
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: app.broker/tier
+                    operator: Exists
+                  # Wait for container init else GPU driver triggers reboot that can corrupt the docker directory while we are modifying it.
+                  - key: cloud.google.com/gke-accelerator-initialized
+                    operator: In
+                    values: ["true"]
+      tolerations:
+        - effect: "NoSchedule"
+          operator: "Exists"
+
+      volumes:
+        ###
+        # PVC containing cached images
+        ###
+        - name: pod-broker-image-cache
+          persistentVolumeClaim:
+            claimName: pod-broker-image-cache-${TS}
+            readOnly: true
+
+        ###
+        # Root FS from host
+        ###
+        - name: hostfs
+          hostPath:
+            path: /
+            type: Directory
+
+        ###
+        # Loader script
+        ###
+        - name: image-loader
+          configMap:
+            name: image-loader
+            defaultMode: 0755
+
+      # Use the host PID namespace, required to perform mounts on host using nsenter.
+      hostPID: true
+
+      initContainers:
+        ###
+        # Loads images into docker from persistent disk.
+        ###
+        - name: image-loader
+          image: cos-nvidia-installer:fixed
+          securityContext:
+            privileged: true
+
+          command: ["/bin/sh"]
+          args:
+            - -c
+            - |
+              cp /var/run/image-loader/inject-images.sh /hostfs/home/kubernetes/bin/inject-images.sh
+
+              PD_DOCKER_DIR=/home/kubernetes/containerized_mounter/rootfs/var/lib/kubelet/plugins/kubernetes.io/gce-pd/mounts/${PD_NAME}/var/lib/docker
+              OVERLAY_DEST=/home/kubernetes/docker_image_overlay
+
+              echo "Loading cached images from ${PD_DOCKER_DIR}..."
+              nsenter -m/proc/1/ns/mnt /home/kubernetes/bin/inject-images.sh "${PD_DOCKER_DIR}" "${OVERLAY_DEST}"
+
+              echo "Done loading image layers"
+          env:
+            - name: PD_NAME
+              value: ${PD_NAME}
+          volumeMounts:
+            - name: pod-broker-image-cache
+              mountPath: /mnt
+              readOnly: true
+            - name: hostfs
+              mountPath: /hostfs
+            - name: image-loader
+              mountPath: /var/run/image-loader/inject-images.sh
+              subPath: inject-images.sh
+
+      containers:
+        ###
+        # Add label to node indicating cached image load is complete
+        # Need to constantly apply node labels as they are reset on cluster upgrade:
+        # See also: https://github.com/kubernetes/kubernetes/issues/18307
+        ###
+        - name: update-labels
+          image: google/cloud-sdk
+          command: ["/bin/sh"]
+          args:
+            - -ec
+            - |
+              cat - | tee /tmp/init.sh <<EOF
+              # update node label
+              kubectl label node "${MY_NODE_NAME}" --overwrite app.broker/image-load-initialized=true
+              EOF
+              chmod +x /tmp/init.sh
+              while true; do
+                /tmp/init.sh | grep -qv "not labeled" || true
+                sleep 10
+              done
+          env:
+            - name: MY_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
