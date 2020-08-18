@@ -78,6 +78,10 @@ WEAVE_POD=$(kubectl get pod -n kube-system -l name=weave-net -o jsonpath='{.item
 ```
 
 ```bash
+kubectl wait pod $WEAVE_POD --for=condition=Ready -n kube-system --timeout=300s
+```
+
+```bash
 kubectl exec -c weave -it ${WEAVE_POD?} -n kube-system -- /home/weave/weave --local status
 ```
 
