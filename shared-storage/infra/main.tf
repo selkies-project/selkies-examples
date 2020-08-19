@@ -28,7 +28,16 @@ locals {
   storage_cidr   = "10.${200 + local.cluster_ip_num}.0.0/29"
 }
 
+resource "google_project_service" "filestore" {
+  project = var.project_id
+  service = "file.googleapis.com"
+
+  disable_dependent_services = true
+  disable_on_destroy         = false
+}
+
 resource "google_filestore_instance" "shared-storage" {
+  project = google_project_service.filestore.project
   name = "${var.name}-shared-storage-${var.zone}"
   zone = var.zone
   tier = var.tier
