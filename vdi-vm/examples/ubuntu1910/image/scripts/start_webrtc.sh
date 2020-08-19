@@ -67,6 +67,17 @@ echo "INFO: Waiting for proxy startup"
 until curl --connect-timeout 1 -sf http://localhost:5050/turn/ >/dev/null 2>&1; do sleep 1; done
 echo "INFO: Proxy is ready"
 
+# Copy most recent NVIDIA drivers to mounted directory.
+NVIDIA_LIB_DIR=$(dirname $(ldconfig -p | grep libnvidia-encode.so | grep x86-64 | tr ' ' '\n' | grep / | tail -1))
+if [[ ! -d "${NVIDIA_LIB_DIR}" ]]; then
+    echo "ERROR: libnvidia-encode.so not found in library path, make sure the NVIDIA driver is installed."
+    exit 1
+fi
+rsync -ra ${NVIDIA_LIB_DIR}/{lib*nv*,lib*cuda*,vdpau} /usr/local/nvidia/lib64/
+
+# Copy most recent CUDA libraries.
+rsync -ra /usr/local/cuda-10.*/lib64/* ${CUDA_LIB_DIR}
+
 # Start the webrtc container
 echo "INFO: Starting webrtc"
 sudo docker run --name webrtc -d --restart=always \

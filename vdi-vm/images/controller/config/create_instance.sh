@@ -50,7 +50,7 @@ if [[ "${STATUS}" == "TERMINATED" ]]; then
     DISK_NAME="${INSTANCE_NAME?}-persist"
     if [[ -n "$(${GCLOUD} compute disks list --filter=name~${DISK_NAME?} --format='value(name)')" ]]; then
         echo "INFO: Found user persistent disk: ${DISK_NAME?}"
-        CURR_DISK=$(${GCLOUD} compute instances describe ${INSTANCE_NAME?} --format='value(disks[0].name)'
+        CURR_DISK=$(${GCLOUD} compute instances describe ${INSTANCE_NAME?} --format='value(disks[0].name)')
         if [[ "${CURR_DISK?}" != "${DISK_NAME?}" ]]; then
             echo "INFO: Attaching user persistent disk to instance"
             ${GCLOUD} compute instances detach-disk ${INSTANCE_NAME?}

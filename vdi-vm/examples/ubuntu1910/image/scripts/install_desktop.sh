@@ -51,3 +51,11 @@ systemctl set-default multi-user.target
 
 # Patch Xwrapper to allow users to run X servers.
 sed -i 's/allowed_users=.*/allowed_users=anybody/g' /etc/X11/Xwrapper.config
+
+# Disable screen lock and screensaver
+cat - | sudo tee /usr/share/glib-2.0/schemas/90_ubuntu-settings.gschema.override <<EOF
+[org.gnome.desktop.screensaver]
+lock-enabled = false
+[org.gnome.settings-daemon.plugins.power]
+idle-dim = false
+EOF
