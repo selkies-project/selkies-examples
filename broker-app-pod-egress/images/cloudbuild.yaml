@@ -19,6 +19,9 @@ substitutions:
   _IMAGE_PREFIX: vdi
   _IMAGE_TAG: latest
 
+tags:
+  - egress-proxy-images
+
 ###
 # Images to be pushed
 ###

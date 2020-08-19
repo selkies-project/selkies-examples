@@ -19,6 +19,9 @@ substitutions:
   _REGION: us-west1
   _INSTANCE_COUNT: "1"
 
+tags:
+  - egress-proxy-instance
+
 steps:
   ###
   # Apply terraform to create cluster

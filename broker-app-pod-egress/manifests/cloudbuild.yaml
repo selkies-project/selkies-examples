@@ -19,6 +19,10 @@ substitutions:
   _PROXY_CIDR:
   _EGRESS_PROXY:
   _PROXY_CACHE_PEER:
+
+tags:
+  - egress-proxy-manifests
+
 steps:
   ###
   #

@@ -54,3 +54,20 @@ resource "google_compute_route" "proxy-metadata" {
   priority         = 100
   tags             = ["broker-proxy"]
 }
+
+# Firewall rule to allow IAP
+resource "google_compute_firewall" "allow-iap" {
+  name    = "allow-iap-broker-proxy"
+  project = var.project_id
+  network = data.google_compute_network.broker.name
+
+  allow {
+    protocol = "tcp"
+  }
+
+  target_tags = ["broker-proxy"]
+
+  source_ranges = [
+    "35.235.240.0/20"
+  ]
+}
