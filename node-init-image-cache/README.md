@@ -69,7 +69,7 @@ DISK_SIZE_GB=256
 2. Create the GCE disk image containing a cache of the core Selkies images using Cloud Build and Packer:
 
 ```bash
-(cd build/selkies-image-cache && gcloud builds submit --project=${PROJECT_ID} --substitutions=_PROVISION_ZONE=${ZONE},_DISK_SIZE_GB=${DISK_SIZE_GB})
+(cd build/selkies-image-cache && gcloud builds submit --project=${PROJECT_ID} --substitutions=_PROVISION_ZONE=${ZONE},_DISK_SIZE_GB=${DISK_SIZE_GB},_USE_LAST_IMAGE="false")
 ```
 
 > NOTE: you can include other images by adding them to the file: `build/selkies-image-cache/scripts/image_list.txt`
@@ -79,7 +79,7 @@ DISK_SIZE_GB=256
 3. Create persistent disk from image:
 
 ```bash
-(cd build/gce-pd && gcloud builds submit --project=${PROJECT_ID} --substitutions=_DISK_ZONE=${ZONE},_DISK_SIZE_GB=${DISK_SIZE_GB},_USE_LAST_IMAGE="false")
+(cd build/gce-pd && gcloud builds submit --project=${PROJECT_ID} --substitutions=_DISK_ZONE=${ZONE},_DISK_SIZE_GB=${DISK_SIZE_GB})
 ```
 
 ## Installing the DaemonSet
