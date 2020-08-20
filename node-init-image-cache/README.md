@@ -79,7 +79,7 @@ DISK_SIZE_GB=256
 3. Create persistent disk from image:
 
 ```bash
-(cd build/gce-pd && gcloud builds submit --project=${PROJECT_ID} --substitutions=_DISK_ZONE=${ZONE},_DISK_SIZE_GB=${DISK_SIZE_GB})
+(cd build/gce-pd && gcloud builds submit --project=${PROJECT_ID} --substitutions=_DISK_ZONE=${ZONE},_DISK_SIZE_GB=${DISK_SIZE_GB},_USE_LAST_IMAGE="false")
 ```
 
 ## Installing the DaemonSet
