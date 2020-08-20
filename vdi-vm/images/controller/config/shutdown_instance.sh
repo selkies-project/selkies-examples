@@ -16,4 +16,4 @@
 
 [[ "$1" == "false" ]] && echo "Skipping instance shutdown" && exit 0
 
-gcloud -q --project ${INSTANCE_PROJECT?} compute instances stop ${INSTANCE_NAME?} --zone ${INSTANCE_ZONE?}
+gcloud -q --project ${INSTANCE_PROJECT?} compute instances stop ${INSTANCE_NAME?} --zone ${INSTANCE_ZONE?} --async
