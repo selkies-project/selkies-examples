@@ -48,7 +48,7 @@ WORKDIR /opt/app
 
 RUN \
     git clone https://github.com/supertuxkart/stk-code stk-code && \
-    svn co https://svn.code.sf.net/p/supertuxkart/code/stk-assets stk-assets
+    svn co -r 18258 https://svn.code.sf.net/p/supertuxkart/code/stk-assets stk-assets
 
 RUN \
     cd stk-code && \

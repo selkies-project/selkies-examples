@@ -17,6 +17,9 @@ substitutions:
   _NAME: broker
   _REGION: us-west1
 
+tags:
+  - supertuxkart-manifests
+
 steps:
   ###
   # Deploy manifests to cluster.

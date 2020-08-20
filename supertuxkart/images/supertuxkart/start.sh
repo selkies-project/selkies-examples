@@ -24,22 +24,27 @@ SET_WIDTH=1920
 SET_HEIGHT=1080
 STK_SERVER_MATCH="http://supertuxkart-server.supertuxkart.svc.cluster.local:8080/match"
 
+
 # Game Config
 PLAYER_NAME=${VDI_USER:?env not set}
 # remove email domain
 PLAYER_NAME=${PLAYER_NAME%@*}
-STK_CONFIG_DIR="/home/app/.config/supertuxkart/config-0.10"
-mkdir -p "${STK_CONFIG_DIR}"
-cp /tmp/stk-config/{input,server_config}.xml "${STK_CONFIG_DIR}/"
 
-sed -e 's/="SuperTuxKart"/="'${PLAYER_NAME}'"/g' \
+if [[ ! -d "${STK_CONFIG_DIR}" ]]; then
+    # Copy config first time
+    STK_CONFIG_DIR="/home/app/.config/supertuxkart/config-0.10"
+    mkdir -p "${STK_CONFIG_DIR}"
+    cp /tmp/stk-config/{input,server_config}.xml "${STK_CONFIG_DIR}/"
+
+    sed -e 's/="SuperTuxKart"/="'${PLAYER_NAME}'"/g' \
     /tmp/stk-config/players.xml > "${STK_CONFIG_DIR}/players.xml"
 
-sed -e 's/width=.*/width="'${SET_WIDTH}'"/g' \
-    /tmp/stk-config/config.xml > "${STK_CONFIG_DIR}/config.xml"
+    sed -e 's/width=.*/width="'${SET_WIDTH}'"/g' \
+        /tmp/stk-config/config.xml > "${STK_CONFIG_DIR}/config.xml"
 
-sed -e 's/height=.*/height="'${SET_HEIGHT}'"/g' \
-    /tmp/stk-config/config.xml > "${STK_CONFIG_DIR}/config.xml"
+    sed -e 's/height=.*/height="'${SET_HEIGHT}'"/g' \
+        /tmp/stk-config/config.xml > "${STK_CONFIG_DIR}/config.xml"
+fi
 
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/opt/app/stk-code/cmake_build/lib/wiiuse/src
 
@@ -55,4 +60,6 @@ while true; do
         until [[ -n "${SERVER_MATCH}" ]]; do SERVER_MATCH=$(curl -sf ${STK_SERVER_MATCH}); echo "Waiting for server match at: ${STK_SERVER_MATCH}"; sleep 2; done
         ./supertuxkart --connect-now=${SERVER_MATCH} --auto-connect
     fi
+
+    sleep 0.5
 done

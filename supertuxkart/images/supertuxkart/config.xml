@@ -9,8 +9,8 @@
     <Audio
         sfx_on="true"
         music_on="true"
-        sfx_volume="0.600000"
-        music_volume="0.500000"
+        sfx_volume="0.10"
+        music_volume="0.10"
     >
     </Audio>
 
