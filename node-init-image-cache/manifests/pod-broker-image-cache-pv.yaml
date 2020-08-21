@@ -16,6 +16,8 @@ apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: pod-broker-image-cache-${TS}
+  labels:
+    app: image-cache
 spec:
   storageClassName: ""
   capacity:
@@ -23,7 +25,7 @@ spec:
   accessModes:
     - ReadOnlyMany
   claimRef:
-    namespace: pod-broker-system
+    namespace: kube-system
     name: pod-broker-image-cache-${TS}
   gcePersistentDisk:
     pdName: ${PD_NAME}
@@ -35,6 +37,8 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: pod-broker-image-cache-${TS}
+  labels:
+    app: image-cache
 spec:
   # Specify "" as the storageClassName so it matches the PersistentVolume's StorageClass.
   # A nil storageClassName value uses the default StorageClass. For details, see

@@ -16,7 +16,6 @@ kind: DaemonSet
 apiVersion: apps/v1
 metadata:
   name: pod-broker-image-loader-tier1-${TS}
-  namespace: pod-broker-system
   labels:
     app: pod-broker-image-loader
 spec:
@@ -28,12 +27,14 @@ spec:
       labels:
         app: pod-broker-image-loader
     spec:
-      serviceAccountName: pod-broker
+      serviceAccountName: pod-broker-node-init
 
       terminationGracePeriodSeconds: 2
 
       # Use host network to avoid wating for cni to initialize.
       hostNetwork: true
+
+      priorityClassName: system-cluster-critical
 
       nodeSelector:
         app.broker/tier: "tier1"

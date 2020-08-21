@@ -16,7 +16,6 @@ kind: DaemonSet
 apiVersion: apps/v1
 metadata:
   name: pod-broker-image-loader-gpu-cos-${TS}
-  namespace: pod-broker-system
   labels:
     app: pod-broker-image-loader
 spec:
@@ -28,9 +27,11 @@ spec:
       labels:
         app: pod-broker-image-loader
     spec:
-      serviceAccountName: pod-broker
+      serviceAccountName: pod-broker-node-init
 
       terminationGracePeriodSeconds: 2
+
+      priorityClassName: system-cluster-critical
 
       # Use host network to avoid wating for cni to initialize.
       hostNetwork: true
