@@ -13,10 +13,6 @@
 # limitations under the License.
 
 timeout: 3600s
-options:
-  machineType: "N1_HIGHCPU_32"
-  diskSizeGb: "512"
-
 substitutions:
   _USE_CACHE: "true"
   _IMAGE_PREFIX: vdi-proton
