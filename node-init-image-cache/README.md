@@ -91,7 +91,7 @@ REGION=us-west1
 ```
 
 ```bash
-(cd manifests && gcloud builds submit --project=${PROJECT_ID} --substitutions=_REGION=${REGION})
+(cd manifests && gcloud builds submit --project=${PROJECT_ID} --substitutions=_REGION=${REGION},_DISK_ZONE=${ZONE})
 ```
 
 > NOTE: this creates 2 DaemonSets, one for the gpu-cos node pool and other for the tier1 node pool. The gpu-cos DaemonSet uses the pre-installed `cos-nvidia-installer:fixed` image, which only exists on nodes with GPUs attached.

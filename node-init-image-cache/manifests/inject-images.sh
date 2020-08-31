@@ -51,10 +51,10 @@ fi
 if ! mountpoint -q "/var/lib/docker/image"; then
     # Merge the repositories.json file
     TMP=$(mktemp)
-    ${JQ} -r -c -s '.[0] * .[1]' /var/lib/docker/image/overlay2/repositories.json ${PD_DOCKER_DIR}/image/overlay2/repositories.json > ${TMP}
-    cp /var/lib/docker/image/overlay2/repositories.json /var/lib/docker/image/overlay2/repositories.json.orig
-    cp ${TMP} /var/lib/docker/image/overlay2/repositories.json
-    rm -f ${TMP}
+    flock -w 10 -x /var/lib/docker/image/overlay2/repositories.json sh -exc "
+    cp /var/lib/docker/image/overlay2/repositories.json /var/lib/docker/image/overlay2/repositories.json.orig;
+    ${JQ} -r -c -s '.[0] * .[1]' /var/lib/docker/image/overlay2/repositories.json.orig ${PD_DOCKER_DIR}/image/overlay2/repositories.json > /var/lib/docker/image/overlay2/repositories.json;
+    rm -f ${TMP};"
 
     # Mount overlayfs on top of layerdb
     mkdir -p ${OVERLAY_DEST}/image/{upper,work}
