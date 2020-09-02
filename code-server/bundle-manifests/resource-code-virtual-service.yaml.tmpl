@@ -120,6 +120,13 @@ spec:
             host: {{$.FullName}}-{{$.ServiceName}}
             port:
               number: {{$port}}
+      corsPolicy:
+        allowCredentials: true
+        allowMethods:
+          - POST
+          - GET
+        allowOrigin:
+          - "*"
       websocketUpgrade: true
     
     ###
@@ -134,7 +141,7 @@ spec:
       headers:
         response:
           set:
-            set-cookie: {{$.App}}-web-preview-{{$port}}={{$.User}}
+            set-cookie: {{$.App}}-web-preview-{{$port}}={{$.User}}; SameSite=None; Secure; HttpOnly
             location: /
       route:
         - destination:
