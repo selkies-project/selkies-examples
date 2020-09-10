@@ -58,7 +58,7 @@ if ! mountpoint -q "/var/lib/docker/image"; then
 
     # Mount overlayfs on top of layerdb
     mkdir -p ${OVERLAY_DEST}/image/{upper,work}
-    ! mountpoint -q "/var/lib/docker/image" && mount -t overlay overlay -o lowerdir=${PD_DOCKER_DIR}/image:/var/lib/docker/image,upperdir=${OVERLAY_DEST}/image/upper,workdir=${OVERLAY_DEST}/image/work /var/lib/docker/image
+    ! mountpoint -q "/var/lib/docker/image" && mount -t overlay overlay -o lowerdir=/var/lib/docker/image:${PD_DOCKER_DIR}/image,upperdir=${OVERLAY_DEST}/image/upper,workdir=${OVERLAY_DEST}/image/work /var/lib/docker/image
 else
     echo "/var/lib/docker/image is already mounted, skipping"
 fi
