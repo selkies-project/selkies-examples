@@ -22,6 +22,9 @@ substitutions:
   _IMAGE_PREFIX: code-server-gke
   _IMAGE_TAG: latest
 
+tags:
+  - code-server-images
+
 ###
 # Images to be pushed
 ###

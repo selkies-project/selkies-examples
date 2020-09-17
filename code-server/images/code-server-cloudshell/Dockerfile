@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG CODE_SERVER_BASE=codercom/code-server:3.4.1
+ARG CODE_SERVER_BASE=codercom/code-server:3.5.0
 FROM ${CODE_SERVER_BASE} as code-server
 
 FROM gcr.io/cloudshell-images/cloudshell:latest
@@ -38,7 +38,7 @@ RUN curl -o ffmpeg-xpra.deb -L https://www.xpra.org/dists/stretch/main/binary-am
     rm -f ffmpeg-xpra.deb
 
 # Install xpra, xephyr and xfce4
-RUN curl -sfL https://xpra.org/repos/stretch/xpra.list | tee /etc/apt/sources.list.d/xpra-beta.list && \
+RUN curl -sfL https://xpra.org/repos/buster/xpra.list | tee /etc/apt/sources.list.d/xpra-beta.list && \
 	curl -sfL https://xpra.org/gpg.asc | apt-key add - && \
     apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
         xpra \
