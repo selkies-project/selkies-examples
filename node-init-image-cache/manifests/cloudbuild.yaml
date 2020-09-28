@@ -49,6 +49,10 @@ steps:
       - "-o"
       - "pipefail"
       - |
+        # Delete old daemonset, pvc, and pv.
+        /builder/kubectl.bash delete -n kube-system ds -l app=pod-broker-image-loader || true
+        /builder/kubectl.bash delete -n kube-system pv,pvc -l app=image-cache || true
+
         kubectl.1.17 kustomize | \
           sed \
             -e 's/$${PROJECT_ID}/'${PROJECT_ID}'/g' \

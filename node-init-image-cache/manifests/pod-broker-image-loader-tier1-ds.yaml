@@ -122,11 +122,14 @@ spec:
         # See also: https://github.com/kubernetes/kubernetes/issues/18307
         ###
         - name: update-labels
-          image: google/cloud-sdk
+          image: alpine:3.9
           command: ["/bin/sh"]
           args:
             - -ec
             - |
+              grep -q "edge/testing" /etc/apk/repositories || echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories
+              apk add -u kubectl
+
               cat - | tee /tmp/init.sh <<EOF
               # update node label
               kubectl label node "${MY_NODE_NAME}" --overwrite app.broker/image-load-initialized=true

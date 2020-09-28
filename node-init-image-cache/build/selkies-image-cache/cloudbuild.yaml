@@ -85,6 +85,10 @@ steps:
     args:
       - "-ec"
       - |
+        # Generate timestamp and save for later
+        TIMESTAMP=$(date +%s)
+        echo "$$TIMESTAMP" | tee /workspace/image-timestamp
+
         SRC_IMAGE_FAMILY="${_SOURCE_IMAGE_FAMILY}"
         [[ "${_USE_LAST_IMAGE}" == "true" ]] && SRC_IMAGE_FAMILY="${_APPNAME}"
         cat - | tee packer.json <<EOF
@@ -99,7 +103,7 @@ steps:
                 "disk_size": "${_DISK_SIZE_GB}",
                 "disk_type": "pd-ssd",
                 "source_image_family": "$${SRC_IMAGE_FAMILY}",
-                "image_name": "${_APPNAME}-{{timestamp}}",
+                "image_name": "${_APPNAME}-$${TIMESTAMP}",
                 "image_family": "${_APPNAME}",
                 "ssh_username": "ubuntu",
                 "scopes": [
@@ -151,3 +155,17 @@ steps:
       - packer-builder-build
       - create-packer-spec
       - create-packer-service-account
+  ###
+  # Prune old images
+  ###
+  - name: gcr.io/cloud-builders/gcloud
+    id: prune-images
+    entrypoint: /bin/bash
+    args:
+      - -exc
+      - |
+        TIMESTAMP=$(cat /workspace/image-timestamp)
+        gcloud compute images list --filter="name~${_APPNAME} name!~${_APPNAME}-$${TIMESTAMP}" -q --format='value(name)' | \
+          xargs -I {} gcloud -q compute images delete {}
+    waitFor:
+      - packer-build

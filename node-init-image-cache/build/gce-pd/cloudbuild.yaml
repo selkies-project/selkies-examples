@@ -36,6 +36,12 @@ steps:
           --sort-by=~creationTimestamp \
           --limit 1 \
           --format='value(name)' | cut -f1 | awk -F- '{print $$NF}')
+        echo "$${ts}" | tee /workspace/disk-timestamp
+
+        if [[ $(gcloud compute disks list --filter="name~${_IMAGE_FAMILY}-${_DISK_ZONE}-$${ts}" -q --format='value(name)' | wc -l) -gt 0 ]]; then
+          echo "Disk already exists, skipping creation."
+          exit 0
+        fi
 
         # Create disk from image.
         gcloud compute disks create ${_IMAGE_FAMILY}-${_DISK_ZONE}-$${ts} \
@@ -44,3 +50,19 @@ steps:
           --zone ${_DISK_ZONE} \
           --size ${_DISK_SIZE_GB}GB \
           --type ${_DISK_TYPE}
+  ###
+  # Prune old disks
+  ###
+  - name: gcr.io/cloud-builders/gcloud
+    id: prune-disks
+    entrypoint: /bin/bash
+    args:
+      - -xc
+      - |
+        ts=$(cat /workspace/disk-timestamp)
+        for disk in $(gcloud compute disks list --filter="name~${_IMAGE_FAMILY}-${_DISK_ZONE} name!~${_IMAGE_FAMILY}-${_DISK_ZONE}-$${ts} users[0]=null" -q --format='csv[no-heading](name,zone)'); do
+          IFS="," read -ra toks <<< $${disk}
+          gcloud compute disks delete -q $${toks[0]} --zone $${toks[1]}
+        done
+    waitFor:
+      - create-disk
