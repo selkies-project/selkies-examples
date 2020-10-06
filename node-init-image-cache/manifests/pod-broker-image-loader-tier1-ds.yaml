@@ -36,9 +36,6 @@ spec:
 
       priorityClassName: system-cluster-critical
 
-      nodeSelector:
-        app.broker/tier: "tier1"
-
       # Only run on nodes that will host broker apps.
       affinity:
         nodeAffinity:
@@ -46,7 +43,10 @@ spec:
             nodeSelectorTerms:
               - matchExpressions:
                   - key: app.broker/tier
-                    operator: Exists
+                    operator: In
+                    values:
+                      - tier1
+                      - tier1-ubuntu
 
       tolerations:
         - effect: "NoSchedule"
