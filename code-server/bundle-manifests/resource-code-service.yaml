@@ -21,17 +21,17 @@ spec:
     app: code
   ports:
     - port: 80
-      name: code
+      name: http-web
       targetPort: 3180
     - port: 3181
-      name: tfm
+      name: http-tfm
       targetPort: 3181
     - port: 3000
-      name: web-preview-3000
+      name: http-web-preview-3000
       targetPort: 3000
     - port: 8000
-      name: web-preview-8000
+      name: http-web-preview-8000
       targetPort: 8000
     - port: 8080
-      name: web-preview-8080
+      name: http-web-preview-8080
       targetPort: 8080
