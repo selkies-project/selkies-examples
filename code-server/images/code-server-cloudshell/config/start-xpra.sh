@@ -17,6 +17,23 @@
 timeout 1 xpra info $XPRA >/dev/null 2>&1
 [[ $? -eq 0 ]] && echo "INFO: Xpra is already running at: https://${CODE_SERVER_WEB_PREVIEW_8080}/" && exit 0
 
+if [[ -z "${XPRA_HTML5_DEFAULT_SETTINGS}" ]]; then
+  read -r -d '' XPRA_HTML5_DEFAULT_SETTINGS << EOM
+floating_menu = true
+video = false
+sound = false
+encoding = jpeg
+autohide = true
+EOM
+  export XPRA_HTML5_DEFAULT_SETTINGS
+fi
+
+# Write html5 client default settings
+if [[ -n "${XPRA_HTML5_DEFAULT_SETTINGS}" ]]; then
+  sudo rm -f /usr/share/xpra/www/default-settings.txt.*
+  echo "${XPRA_HTML5_DEFAULT_SETTINGS}" | sudo tee /usr/share/xpra/www/default-settings.txt >/dev/null
+fi
+
 mkdir -p ${HOME}/.xpra/logs
 
 xpra start \
