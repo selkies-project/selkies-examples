@@ -65,7 +65,9 @@ RUN curl -sfL -o /usr/share/code-server/git-prompt.sh \
 	https://raw.githubusercontent.com/git/git/master/contrib/completion/git-prompt.sh
 
 # Add user and grant sudo
-RUN adduser --gecos '' --disabled-password --shell /bin/bash coder && \
+RUN sed -i 's/:1000:/:2000:/g' /etc/{group,passwd} && \
+    groupadd --gid 1000 coder && \
+    adduser --uid=1000 --gid=1000 --gecos '' --disabled-password --shell /bin/bash coder && \
 	echo "coder ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/nopasswd
 
 WORKDIR /home/coder/project
