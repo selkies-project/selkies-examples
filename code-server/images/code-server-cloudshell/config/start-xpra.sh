@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+XPRA_PORT=${XPRA_PORT:-"8080"}
+
 timeout 1 xpra info $XPRA >/dev/null 2>&1
 [[ $? -eq 0 ]] && echo "INFO: Xpra is already running at: https://${CODE_SERVER_WEB_PREVIEW_8080}/" && exit 0
 
@@ -37,16 +39,19 @@ fi
 mkdir -p ${HOME}/.xpra/logs
 
 xpra start \
-  --bind-tcp=0.0.0.0:8080 \
+  --bind-tcp=0.0.0.0:${XPRA_PORT} \
   --html=on \
   --daemon=yes \
   --no-pulseaudio \
   --log-dir=${HOME}/.xpra/logs \
   --start="xfdesktop --sm-client-disable -A" \
+  $@ \
     > ${HOME}/.xpra.log 2>&1
 
-export XPRA="tcp://127.0.0.1:8080"
+if [[ ! "$@" =~ daemon=no ]]; then
+  export XPRA="tcp://127.0.0.1:${XPRA_PORT}"
 
-echo "INFO: Starting Xpra HTML5 server on port 8080"
-until xpra info $XPRA 2>&1 >/dev/null; do sleep 1; done
-echo "INFO: Xpra is running at: https://${CODE_SERVER_WEB_PREVIEW_8080}/"
+  echo "INFO: Starting Xpra HTML5 server on port ${XPRA_PORT}"
+  until xpra info $XPRA 2>&1 >/dev/null; do sleep 1; done
+  echo "INFO: Xpra is running at: https://${CODE_SERVER_WEB_PREVIEW_8080}/"
+fi

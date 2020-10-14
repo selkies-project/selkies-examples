@@ -20,5 +20,20 @@ until [[ -f ${CERTFILE} ]]; do sleep 1; done
 echo "INFO: Docker sidecar is ready, starting unix socket proxy"
 sudo /usr/share/code-server/start-docker-unix-proxy.sh
 
-echo "INFO: Starting code-server"
-exec /usr/local/bin/code-server --auth=none --bind-addr=0.0.0.0:3180
+if [[ "${USE_XPRA:-'false'}" == 'true' ]]; then
+  # Mimic healthz endpoint
+  sudo touch /usr/share/xpra/www/healthz
+
+  # Send xpra logs to stdout
+  tail -F ${HOME}/.xpra.log &
+
+  # Start xpra in forground
+  while true; do
+    /usr/share/code-server/start-xpra.sh --daemon=no
+    sleep 1
+  done
+  killall tail >/dev/null 2>&1
+else
+  echo "INFO: Starting code-server"
+  exec /usr/local/bin/code-server --auth=none --bind-addr=0.0.0.0:3180
+fi

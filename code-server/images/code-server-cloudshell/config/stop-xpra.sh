@@ -14,7 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-export XPRA="tcp://127.0.0.1:8080"
+XPRA_PORT=${XPRA_PORT:-"8080"}
+
+export XPRA="tcp://127.0.0.1:${XPRA_PORT}"
 
 echo "INFO: Shutting down Xpra"
 

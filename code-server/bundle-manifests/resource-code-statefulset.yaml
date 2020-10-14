@@ -65,6 +65,7 @@ spec:
             runAsUser: 1000
             privileged: false
           command: ["/tini", "--", "/usr/share/code-server/entrypoint.sh"]
+          env: []
           volumeMounts:
             - name: persist
               mountPath: /home/coder
@@ -87,12 +88,14 @@ spec:
             httpGet:
               port: 3180
               scheme: HTTP
+              path: /healthz
           livenessProbe:
             timeoutSeconds: 30
             failureThreshold: 2
             httpGet:
               port: 3180
               scheme: HTTP
+              path: /healthz
           resources:
             limits:
               cpu: 4

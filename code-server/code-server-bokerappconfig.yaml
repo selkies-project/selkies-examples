@@ -34,6 +34,10 @@ spec:
       type: bool
       displayName: "Persistent home directory"
       default: "true"
+    - name: useXpra
+      type: bool
+      displayName: "Use Xpra"
+      default: "false"
   appParams:
     - name: Domain
       default: code.endpoints.${PROJECT_ID}.cloud.goog
