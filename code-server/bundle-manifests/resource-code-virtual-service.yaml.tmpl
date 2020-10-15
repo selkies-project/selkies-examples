@@ -114,7 +114,7 @@ spec:
             exact: "{{$host}}"
           headers:
             cookie:
-              regex: ".*{{$.App}}-web-preview-{{$port}}={{$.User}}.*"
+              regex: ".*{{$.App}}-web-preview-{{$port}}={{$.CookieValue}}.*"
       route:
         - destination:
             host: {{$.FullName}}-{{$.ServiceName}}
@@ -141,7 +141,7 @@ spec:
       headers:
         response:
           set:
-            set-cookie: {{$.App}}-web-preview-{{$port}}={{$.User}}; SameSite=None; Secure; HttpOnly
+            set-cookie: {{$.App}}-web-preview-{{$port}}={{$.CookieValue}}; SameSite=None; Secure; HttpOnly
             location: /
       route:
         - destination:
