@@ -20,7 +20,7 @@ spec:
   version: 1.0.0
   name: blender
   displayName: Blender 3D
-  description: Blender learning envrionment
+  description: Blender learning environment
   icon: https://upload.wikimedia.org/wikipedia/commons/0/0c/Blender_logo_no_text.svg
   bundle:
     configMapRef:
