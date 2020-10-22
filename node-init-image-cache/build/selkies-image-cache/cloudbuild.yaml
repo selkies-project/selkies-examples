@@ -64,16 +64,23 @@ steps:
   # Create service account used by instance during build
   ###
   - name: gcr.io/cloud-builders/gcloud
-    id: create-packer-service-account
+    id: create-packer-sa-fw
     entrypoint: bash
     args:
       - "-ec"
       - |
-        [[ -n "$(gcloud -q iam service-accounts list --filter email~packer@${PROJECT_ID}.iam.gserviceaccount.com)" ]] && exit 0
-        gcloud -q iam service-accounts create packer --display-name "Packer"
-        gcloud -q projects add-iam-policy-binding ${PROJECT_ID} \
-          --member serviceAccount:packer@${PROJECT_ID}.iam.gserviceaccount.com \
-          --role roles/storage.admin
+        if [[ -z "$(gcloud -q iam service-accounts list --filter email~packer@${PROJECT_ID}.iam.gserviceaccount.com --format='value(name)')" ]]; then
+          gcloud -q iam service-accounts create packer --display-name "Packer"
+          gcloud -q projects add-iam-policy-binding ${PROJECT_ID} \
+            --member serviceAccount:packer@${PROJECT_ID}.iam.gserviceaccount.com \
+            --role roles/storage.admin
+        fi
+
+        if [[ -z "$(gcloud -q compute firewall-rules list --filter='name~packer-allow-ssh network~default' --format='value(name)')" ]]; then
+          gcloud -q compute firewall-rules create packer-allow-ssh \
+            --allow tcp:22 \
+            --target-tags packer-allow-ssh
+        fi
     waitFor: ["-"]
 
   ###
@@ -111,7 +118,10 @@ steps:
                     "https://www.googleapis.com/auth/compute",
                     "https://www.googleapis.com/auth/devstorage.full_control"
                 ],
-                "service_account_email": "packer@${PROJECT_ID}.iam.gserviceaccount.com"
+                "service_account_email": "packer@${PROJECT_ID}.iam.gserviceaccount.com",
+                "tags": [
+                  "packer-allow-ssh"
+                ]
               }
           ],
           "provisioners": [
@@ -154,7 +164,7 @@ steps:
     waitFor:
       - packer-builder-build
       - create-packer-spec
-      - create-packer-service-account
+      - create-packer-sa-fw
   ###
   # Prune old images
   ###
