@@ -18,7 +18,7 @@ substitutions:
   _PACKER_VERSION_SHA256SUM: 07f28a1a033f4bcd378a109ec1df6742ac604e7b122d0316d2cddb3c2f6c24d1
   _APPNAME: selkies-image-cache
   _PROVISION_ZONE: us-west1-a
-  _PROVISION_MACHINE_TYPE: n1-standard-16
+  _PROVISION_MACHINE_TYPE: e2-standard-8
   _SOURCE_IMAGE_FAMILY: ubuntu-2004-lts
   _DISK_SIZE_GB: "256"
   _PULL_ALL_GCR: "true"
