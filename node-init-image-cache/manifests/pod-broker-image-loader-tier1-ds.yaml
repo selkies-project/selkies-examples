@@ -34,7 +34,7 @@ spec:
       # Use host network to avoid wating for cni to initialize.
       hostNetwork: true
 
-      priorityClassName: system-cluster-critical
+      priorityClassName: system-node-critical
 
       # Only run on nodes that will host broker apps.
       affinity:

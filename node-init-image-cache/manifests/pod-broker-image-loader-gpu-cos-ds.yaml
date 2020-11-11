@@ -31,7 +31,7 @@ spec:
 
       terminationGracePeriodSeconds: 2
 
-      priorityClassName: system-cluster-critical
+      priorityClassName: system-node-critical
 
       # Use host network to avoid wating for cni to initialize.
       hostNetwork: true
