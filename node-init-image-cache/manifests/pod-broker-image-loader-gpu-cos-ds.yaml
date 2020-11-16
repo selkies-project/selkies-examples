@@ -98,13 +98,12 @@ spec:
             - |
               cp /var/run/image-loader/inject-images.sh /hostfs/home/kubernetes/bin/inject-images.sh
 
-              PD_DOCKER_DIR=/home/kubernetes/containerized_mounter/rootfs/var/lib/kubelet/plugins/kubernetes.io/gce-pd/mounts/${PD_NAME}/var/lib/docker
+              PD_DIR=/home/kubernetes/containerized_mounter/rootfs/var/lib/kubelet/plugins/kubernetes.io/gce-pd/mounts/${PD_NAME}
               OVERLAY_DEST=/home/kubernetes/docker_image_overlay
 
-              echo "Loading cached images from ${PD_DOCKER_DIR}..."
-              nsenter -m/proc/1/ns/mnt /home/kubernetes/bin/inject-images.sh "${PD_DOCKER_DIR}" "${OVERLAY_DEST}"
-
-              echo "Done loading image layers"
+              echo "Image cache disk mounted at: ${PD_DIR}"
+              nsenter -m/proc/1/ns/mnt /home/kubernetes/bin/inject-images.sh "${PD_DIR}" "${OVERLAY_DEST}"
+              echo "Done loading cached images"
           env:
             - name: PD_NAME
               value: ${PD_NAME}

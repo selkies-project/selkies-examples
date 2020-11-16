@@ -17,6 +17,11 @@
 set -e
 set -x
 
+if [[ -n $(command -v docker) ]]; then
+    echo "Docker is already installed"
+    exit 0
+fi
+
 # Use GCE apt servers
 GCE_ZONE=$(curl -H Metadata-Flavor:Google http://metadata/computeMetadata/v1/instance/zone | cut -d/ -f4)
 GCE_REGION=${GCE_ZONE%-*}
