@@ -15,21 +15,20 @@
 # limitations under the License.
 
 # Generate SSH key for server
-ssh-keygen -A
+sudo ssh-keygen -A
+sudo mkdir -p /run/sshd
 
 # Generate SSH key for user
 mkdir -p ${HOME}/.ssh
 ssh-keygen -t rsa -q -N "" -f ${HOME}/.ssh/selkies_vdi.key
 
 if [[ $? -eq 0 ]]; then
-    echo "INFO: Updating authorized_keys"
     cat ${HOME}/.ssh/selkies_vdi.key.pub > ${HOME}/.ssh/authorized_keys
 
-    echo "INFO: Updating user password"
+    # Set new user password
     USERPASSWD=$(</dev/urandom tr -dc '12345!@#$%qwertQWERTasdfgASDFGzxcvbZXCVB' | head -c10; echo "")
     echo "${USER}:${USERPASSWD}" | sudo chpasswd
 
-    echo "INFO: Writing creds.json"
     jq \
         --arg u "${USER}" \
         --arg p "${USERPASSWD}" \
