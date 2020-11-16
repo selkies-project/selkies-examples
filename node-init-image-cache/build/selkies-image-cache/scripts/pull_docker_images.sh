@@ -18,6 +18,9 @@ IMAGE_LIST_FILE=$1
 
 gcloud -q auth configure-docker
 
+# Cleanup images
+docker images --filter dangling=true -q | xargs -I {} docker rmi {} 2>/dev/null
+
 export IMAGES=()
 # Pull all images found in project scoped GCR
 if [[ "${PULL_ALL_GCR:-"false"}" == "true" ]]; then
@@ -63,6 +66,9 @@ function pullImage() {
 export -f pullImage
 
 # Pull images in parallel
-echo ${IMAGES[*]} | tr ' ' '\n' | xargs -I {} -P$(nproc) bash -c "pullImage {}"
+echo ${IMAGES[*]} | tr ' ' '\n' | xargs -I {} -P$(nproc --ignore=1) bash -c "pullImage {}"
+
+# Cleanup images
+docker images --filter dangling=true -q | xargs -I {} docker rmi {} 2>/dev/null
 
 echo "INFO: Done"
