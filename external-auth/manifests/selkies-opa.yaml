@@ -1,0 +1,172 @@
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+###
+# Envoy filter to add ext_authz to ingressgateway filter chain.
+# Filter is configured to access OPA using k8s service uri: opa.opa.svc.cluster.local:9191
+###
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  namespace: istio-system
+  name: ext-authz
+spec:
+  configPatches:
+    - applyTo: HTTP_FILTER
+      match:
+        context: GATEWAY
+        listener:
+          filterChain:
+            filter:
+              name: "envoy.http_connection_manager"
+              subFilter:
+                name: "envoy.router"
+      patch:
+        operation: INSERT_BEFORE
+        value:
+          name: envoy.ext_authz
+          typed_config:
+            "@type": "type.googleapis.com/envoy.config.filter.http.ext_authz.v2.ExtAuthz"
+            status_on_error:
+              code: ServiceUnavailable
+            
+            # Request body can break if binary data is sent, wait for newer Envoy proxy with fix before enabling.
+            # Until then, only header based auth is possible.
+            #    GH Issue: https://github.com/envoyproxy/envoy/issues/9822
+            #with_request_body:
+            #  max_request_bytes: 8192
+            #  allow_partial_message: true
+            
+            grpc_service:
+              # NOTE(tsandall): when this was tested with the envoy_grpc client the gRPC
+              # server was receiving check requests over HTTP 1.1. The gRPC server in
+              # OPA-Istio would immediately close the connection and log that a bogus
+              # preamble was sent by the client (it expected HTTP 2). Switching to the
+              # google_grpc client resolved this issue.
+              google_grpc:
+                target_uri: opa.opa.svc.cluster.local:9191
+                stat_prefix: "ext_authz"
+---
+###
+# Configuration for opa-istio container to enable OPA envoy plugin.
+###
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: opa
+  name: opa-istio-config
+data:
+  config.yaml: |
+    plugins:
+      envoy_ext_authz_grpc:
+        addr: :9191
+        path: istio/authz/allow
+    decision_logs:
+      console: true
+---
+# Grant OPA/kube-mgmt read-only access to resources. This lets kube-mgmt
+# list configmaps to be loaded into OPA as policies.
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: opa-viewer
+roleRef:
+  kind: ClusterRole
+  name: view
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: Group
+  name: system:serviceaccounts:opa
+  apiGroup: rbac.authorization.k8s.io
+---
+# Define role for OPA/kube-mgmt to update configmaps with policy status.
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  namespace: opa
+  name: configmap-modifier
+rules:
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["update", "patch"]
+---
+# Grant OPA/kube-mgmt role defined above.
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  namespace: opa
+  name: opa-configmap-modifier
+roleRef:
+  kind: Role
+  name: configmap-modifier
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: Group
+  name: system:serviceaccounts:opa
+  apiGroup: rbac.authorization.k8s.io
+---
+# Service that the envoy filter is pointed to.
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: opa
+  name: opa
+spec:
+  type: ClusterIP
+  selector:
+    app: opa
+  ports:
+    - name: http-opa-istio
+      port: 9191
+      targetPort: 9191
+---
+# Deploy OPA and kube-mgmt.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: opa
+  name: opa
+spec:
+  selector:
+    matchLabels:
+      app: opa
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: opa
+    spec:
+      volumes:
+      - name: opa-istio-config
+        configMap:
+          name: opa-istio-config
+          defaultMode: 420
+      containers:
+      - name: opa
+        #image: openpolicyagent/opa
+        image: openpolicyagent/opa:0.24.0-istio
+        args:
+        - "run"
+        - "--server"
+        - "--config-file=/config/config.yaml"
+        - "--addr=localhost:8181"
+        - "--diagnostic-addr=0.0.0.0:8282"
+        ports:
+        - name: http
+          containerPort: 8181
+        volumeMounts:
+        - mountPath: /config
+          name: opa-istio-config
+      - name: kube-mgmt
+        image: openpolicyagent/kube-mgmt:0.11
