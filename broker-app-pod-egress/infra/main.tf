@@ -21,7 +21,7 @@ data "google_compute_network" "broker" {
 
 module "service_accounts" {
   source     = "terraform-google-modules/service-accounts/google"
-  version    = "~> 2.0"
+  version    = "~> 3.0"
   project_id = var.project_id
   prefix     = var.name
   names      = ["proxy"]
