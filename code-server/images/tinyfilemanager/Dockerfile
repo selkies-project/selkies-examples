@@ -21,18 +21,12 @@ RUN adduser --gecos '' --disabled-password --shell /bin/bash tfm --uid 1000
 WORKDIR /var/www/html/files
 
 # releases at: https://github.com/prasathmani/tinyfilemanager/releases
-ARG TFM_VERSION=2.3.8
+ARG TFM_VERSION=2.4.3
 
 # Install tinyfilemanager
 RUN curl -o index.php -sfL https://raw.githubusercontent.com/prasathmani/tinyfilemanager/${TFM_VERSION}/tinyfilemanager.php
 
-# Disable auth
-RUN \
-    sed -i 's/^$use_auth = .*/$use_auth = false;/g' index.php
-
-# Set document root
-RUN \
-    sed -i 's|^$root_path = .*|$root_path = "/data";|g' index.php
+COPY config.php .
 
 # Copy php.ini to increase allowed upload size
 COPY php.ini /etc/php.ini
