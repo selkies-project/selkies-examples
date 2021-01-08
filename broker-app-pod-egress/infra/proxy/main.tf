@@ -67,6 +67,7 @@ resource "google_compute_instance_template" "proxy" {
   }
 
   tags = [
+    "allow-ssh",
     "${var.name}-proxy",
     local.proxy_name
   ]
