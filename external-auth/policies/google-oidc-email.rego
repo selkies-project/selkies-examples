@@ -16,30 +16,29 @@ package istio.authz
 
 import input.attributes.request.http as http_request
 
-# IAP token is inserted and passed via the x-goog-iap-jwt-assertion: "..."
-#  Decodes to:
-#    {
-#      "aud": "/projects/1234567890/global/backendServices/1234567890123456789",
-#      "email": "user@example.com",
-#      "exp": 1605660909,
-#      "hd": "example.com",
-#      "iat": 1605660309,  "iss": "https://cloud.google.com/iap",
-#      "sub": "accounts.google.com:123456789012345678901"
-#    }
-# This policy uses the 'hd' field of the JWT payload to allow all users in a domain.
+# When using OIDC with Google Identities, the following relavent headers are passed:
+#
+# x-goog-authenticated-user-email: "securetoken.google.com/PROJECT_ID:EMAIL"
+#   where:
+#     PROJECT_ID: the project ID where Google Identity Platform is hosted from.
+#     EMAIL: the email address 
 
 token := {"payload": payload} {
 	[header, payload, signature] := io.jwt.decode(http_request.headers["x-goog-iap-jwt-assertion"])
 }
 
+auth := {"email": email, "domain": domain} {
+	[email, domain] := split(split(http_request.headers["x-goog-authenticated-user-email"], ":")[1], "@")
+}
+
 default allow = false
 
 allowed {
-	token.payload.hd == "example.com"
+	auth.domain == "example.com"
 }
 
 allowed {
-	token.payload.hd == "example.io"
+	auth.domain == "example.net"
 }
 
 ###
@@ -51,8 +50,8 @@ allow = response {
   response = {
     "allowed": allowed,
     "headers": {
-		"x-broker-user": split(token.payload.email, "@")[0],
-		"x-broker-id-tok": sprintf("accounts.google.com:%s", [token.payload.email])
+		"x-broker-user": split(auth.email, "@")[0],
+		"x-broker-id-tok": sprintf("accounts.google.com:%s", [auth.email])
 	}
   }
 }
