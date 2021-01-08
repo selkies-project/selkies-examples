@@ -53,6 +53,10 @@ spec:
       oldRepo: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-gst-web
       newRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-gst-web
       newTag: latest
+    watchdog:
+      oldRepo: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-watchdog
+      newRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-watchdog
+      newTag: latest
   userParams:
     - name: enableAudio
       displayName: "Audio"
