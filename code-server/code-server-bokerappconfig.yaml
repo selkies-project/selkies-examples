@@ -48,7 +48,7 @@ spec:
     - name: WebPreview8080
       default: code-port-8080.endpoints.${PROJECT_ID}.cloud.goog
     - name: StorageClassName
-      default: pd-balanced
+      default: pd-ssd
   images:
     cloudshell:
       oldRepo: gcr.io/cloud-solutions-images/code-server-gke-code-server-cloudshell
