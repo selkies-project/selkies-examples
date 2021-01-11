@@ -17,7 +17,7 @@ substitutions:
   _IMAGE_FAMILY: selkies-image-cache
   _DISK_ZONE: us-west1-a
   _DISK_SIZE_GB: "256"
-  _DISK_TYPE: "pd-ssd"
+  _DISK_TYPE: "pd-balanced"
 tags:
   - selkies-image-cache-disk
 steps:
