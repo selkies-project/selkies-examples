@@ -19,6 +19,8 @@
   {{- end}}
 {{- end}}
 
+{{- $storageClassName := default "pd-balanced" .AppParams.StorageClassName }}
+
 {{- if $enablePersistence }}
 ###
 # Add volume claim template
@@ -31,7 +33,7 @@
       annotations:
         app.broker/user: "{{.User}}"
     spec:
-      storageClassName: pd-ssd
+      storageClassName: "{{$storageClassName}}"
       accessModes: [ "ReadWriteOnce" ]
       resources:
         requests:
