@@ -6,7 +6,7 @@ This example shows you how to deploy the [Code Server app](https://github.com/cd
 
 ## Dependencies
 
-- App Launcher: [v1.0.0+](https://github.com/GoogleCloudPlatform/solutions-k8s-stateful-workload-operator/tree/v1.0.0)
+- App Launcher: [v1.0.0+](https://github.com/selkies-project/selkies/tree/v1.0.0)
 
 ## Features
 

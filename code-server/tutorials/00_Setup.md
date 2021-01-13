@@ -24,15 +24,15 @@ This tutorial requires that you have already deployed the Kubernetes App Launche
 
 If you have not already deployed the operator, follow this Cloud Shell tutorial to do so:
 
-[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/GoogleCloudPlatform/solutions-k8s-stateful-workload-operator&cloudshell_git_branch=v1.0.0&cloudshell_tutorial=setup/README.md)
+[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/selkies-project/selkies&cloudshell_git_branch=v1.0.0&cloudshell_tutorial=setup/README.md)
 
 ## Setup
 
 1. Clone the source repo and change to the examples directory:
 
 ```bash
-git clone https://github.com/GoogleCloudPlatform/solutions-k8s-stateful-workload-operator-examples.git && \
-  cd solutions-k8s-stateful-workload-operator-examples/code-server
+git clone https://github.com/selkies-project/selkies-examples.git && \
+  cd selkies-examples/code-server
 ```
 
 2. Set the project, replace `YOUR_PROJECT` with your project ID:
@@ -95,7 +95,7 @@ EOF
 2. Show Terraform plan for the infrastructure changes:
 
 ```bash
-(cd ~/solutions-k8s-stateful-workload-operator/setup/infra/ && gcloud builds submit --substitutions=_ACTION=plan)
+(cd ~/selkies/setup/infra/ && gcloud builds submit --substitutions=_ACTION=plan)
 ```
 
 > NOTE: verify that only the new managed certs will be created and the ssl_certificates on the target https proxy will be updated.
@@ -103,7 +103,7 @@ EOF
 3. Apply the Terraform plan:
 
 ```bash
-(cd ~/solutions-k8s-stateful-workload-operator/setup/infra/ && gcloud builds submit)
+(cd ~/selkies/setup/infra/ && gcloud builds submit)
 ```
 
 > NOTE: it may take several minutes for the managed certificates on the load balancer to update. This can be monitored from the Cloud Console.
@@ -135,5 +135,5 @@ gcloud builds submit --substitutions=_REGION=${REGION?}
 Open the next Cloud Shell Tutorial: __Developer Workflow__:
 
 ```bash
-teachme ~/solutions-k8s-stateful-workload-operator-examples/tutorials/01_Developer_Workflow.md
+teachme ~/selkies-examples/tutorials/01_Developer_Workflow.md
 ```

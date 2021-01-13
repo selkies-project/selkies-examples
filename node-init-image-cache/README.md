@@ -21,8 +21,8 @@ The DaemonSet does the following on host:
 
 ## Dependencies
 
-- App Launcher: [v1.0.0+](https://github.com/GoogleCloudPlatform/selkies/tree/v1.0.0)
-- WebRTC Streaming Stack: [v1.4.0+](https://github.com/GoogleCloudPlatform/solutions-webrtc-gpu-streaming/tree/v1.4.0) (images only)
+- App Launcher: [v1.0.0+](https://github.com/selkies-project/selkies/tree/v1.0.0)
+- WebRTC Streaming Stack: [v1.4.0+](https://github.com/selkies-project/selkies-vdi/tree/v1.4.0) (images only)
 
 ## Features
 
@@ -37,13 +37,13 @@ This tutorial requires that you have already deployed the Kubernetes App Launche
 
 If you have not already deployed the operator, follow this Cloud Shell tutorial to do so:
 
-[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/GoogleCloudPlatform/selkies&cloudshell_git_branch=v1.0.0&cloudshell_tutorial=setup/README.md)
+[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/selkies-project/selkies&cloudshell_git_branch=v1.0.0&cloudshell_tutorial=setup/README.md)
 
 This tutorial requires that you have deployed the WebRTC streaming app launcher stack to the cluster.
 
 If you have not installed the WebRTC stack, follow this Cloud Shell tutorial to do so:
 
-[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/GoogleCloudPlatform/selkies-vdi&cloudshell_git_branch=v1.0.0&&cloudshell_tutorial=tutorials/gke/00_Setup.md)
+[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/selkies-project/selkies-vdi&cloudshell_git_branch=v1.0.0&&cloudshell_tutorial=tutorials/gke/00_Setup.md)
 
 ## Configure your environment
 

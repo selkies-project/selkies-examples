@@ -261,5 +261,5 @@ $HOME/bin/start-jetbrains.sh
 Open the next Cloud Shell Tutorial: __Ops Tasks__:
 
 ```bash
-teachme ~/solutions-k8s-stateful-workload-operator-examples/tutorials/02_Ops_Tasks.md
+teachme ~/selkies-examples/tutorials/02_Ops_Tasks.md
 ```

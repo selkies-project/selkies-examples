@@ -6,8 +6,8 @@ This example shows how to stream an instance of [GZDoom](https://zdoom.org/) usi
 
 ## Dependencies
 
-- App Launcher: [v1.0.0+](https://github.com/GoogleCloudPlatform/solutions-k8s-stateful-workload-operator/tree/v1.0.0)
-- WebRTC Streaming Stack: [v1.4.0+](https://github.com/GoogleCloudPlatform/solutions-webrtc-gpu-streaming/tree/v1.4.0)
+- App Launcher: [v1.0.0+](https://github.com/selkies-project/selkies/tree/v1.0.0)
+- WebRTC Streaming Stack: [v1.4.0+](https://github.com/selkies-project/selkies-vdi/tree/v1.4.0)
 
 ## Features
 
@@ -45,13 +45,13 @@ This tutorial requires that you have already deployed the Kubernetes App Launche
 
 If you have not already deployed the operator, follow this Cloud Shell tutorial to do so:
 
-[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/GoogleCloudPlatform/solutions-k8s-stateful-workload-operator&cloudshell_git_branch=v1.0.0&cloudshell_tutorial=setup/README.md)
+[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/selkies-project/selkies&cloudshell_git_branch=v1.0.0&cloudshell_tutorial=setup/README.md)
 
 This tutorial requires that you have deployed the WebRTC streaming app launcher stack to the cluster.
 
 If you have not installed the WebRTC stack, follow this Cloud Shell tutorial to do so:
 
-[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/GoogleCloudPlatform/solutions-webrtc-gpu-streaming&cloudshell_git_branch=v1.0.0&&cloudshell_tutorial=tutorials/gke/00_Setup.md). 
+[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/selkies-project/selkies-vdi&cloudshell_git_branch=v1.0.0&&cloudshell_tutorial=tutorials/gke/00_Setup.md). 
 
 ## Platform verification
 
