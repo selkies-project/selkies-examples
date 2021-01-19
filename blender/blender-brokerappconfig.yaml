@@ -22,6 +22,15 @@ spec:
   displayName: Blender 3D
   description: Blender learning environment
   icon: https://upload.wikimedia.org/wikipedia/commons/0/0c/Blender_logo_no_text.svg
+
+  # NOTE: running in 'deployment' mode does not support persistent storage or scale to zero.
+  type: deployment
+  deployment:
+    replicas: 2
+  userBundles:
+    - configMapRef:
+        name: webrtc-gpu-streaming-user-manifests-1.4.0
+
   bundle:
     configMapRef:
       name: webrtc-gpu-streaming-manifests-1.4.0
@@ -57,19 +66,6 @@ spec:
       oldRepo: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-xpra
       newRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-xpra
       newTag: latest
-  userParams:
-    - name: enableAudio
-      displayName: "Audio"
-      type: bool
-      default: "false"
-    - name: enablePersistence
-      displayName: "Persistent Home"
-      type: bool
-      default: "false"
-    - name: enableXpra
-      displayName: "Use Xpra"
-      type: bool
-      default: "false"
   appParams:
     - name: idleShutdownTimeout
       default: "600" # seconds
