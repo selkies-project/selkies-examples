@@ -22,6 +22,15 @@ spec:
   displayName: Heaven Demo
   description: Heaven 3D benchmark demo by Unigine
   icon: https://www.macfn.com/data/2016/08/Heaven-Benchmark.png
+
+  # NOTE: running in 'deployment' mode does not support persistent storage or scale to zero.
+  type: deployment
+  deployment:
+    replicas: 2
+  userBundles:
+    - configMapRef:
+        name: webrtc-gpu-streaming-user-manifests-1.4.0
+
   bundle:
     configMapRef:
       name: webrtc-gpu-streaming-manifests-1.4.0
@@ -53,14 +62,11 @@ spec:
       oldRepo: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-gst-web
       newRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-gst-web
       newTag: latest
-  userParams:
-    - name: enableAudio
-      displayName: "Audio"
-      type: bool
-      default: "false"
   appParams:
     - name: idleShutdownTimeout
       default: "600" # seconds
+    - name: enableAudio
+      default: "true"
   defaultTier: gpu
   nodeTiers:
     - name: gpu
