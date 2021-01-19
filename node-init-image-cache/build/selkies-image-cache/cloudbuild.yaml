@@ -17,7 +17,9 @@ substitutions:
   _PACKER_VERSION: 1.5.5
   _PACKER_VERSION_SHA256SUM: 07f28a1a033f4bcd378a109ec1df6742ac604e7b122d0316d2cddb3c2f6c24d1
   _APPNAME: selkies-image-cache
+  _PROVISION_REGION: us-west1
   _PROVISION_ZONE: us-west1-a
+  _NETWORK: broker
   _PROVISION_MACHINE_TYPE: e2-standard-8
   _SOURCE_IMAGE_FAMILY: ubuntu-2004-lts
   _DISK_SIZE_GB: "256"
@@ -76,8 +78,8 @@ steps:
             --role roles/storage.admin
         fi
 
-        if [[ -z "$(gcloud -q compute firewall-rules list --filter='name~packer-allow-ssh network~default' --format='value(name)')" ]]; then
-          gcloud -q compute firewall-rules create packer-allow-ssh \
+        if [[ -z "$(gcloud -q compute firewall-rules list --filter='name~packer-allow-ssh network~${_NETWORK}' --format='value(name)')" ]]; then
+          gcloud -q compute firewall-rules create --network=${_NETWORK} packer-allow-ssh \
             --allow tcp:22 \
             --target-tags packer-allow-ssh
         fi
@@ -106,9 +108,10 @@ steps:
                 "state_timeout": "30m",
                 "project_id": "${PROJECT_ID}",
                 "zone": "${_PROVISION_ZONE}",
+                "subnetwork": "${_NETWORK}-${_PROVISION_REGION}",
                 "machine_type": "${_PROVISION_MACHINE_TYPE}",
                 "disk_size": "${_DISK_SIZE_GB}",
-                "disk_type": "pd-ssd",
+                "disk_type": "pd-balanced",
                 "source_image_family": "$${SRC_IMAGE_FAMILY}",
                 "image_name": "${_APPNAME}-$${TIMESTAMP}",
                 "image_family": "${_APPNAME}",

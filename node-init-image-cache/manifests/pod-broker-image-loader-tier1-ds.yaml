@@ -31,10 +31,10 @@ spec:
 
       terminationGracePeriodSeconds: 2
 
+      priorityClassName: system-node-critical
+
       # Use host network to avoid wating for cni to initialize.
       hostNetwork: true
-
-      priorityClassName: system-node-critical
 
       # Only run on nodes that will host broker apps.
       affinity:
@@ -47,6 +47,9 @@ spec:
                     values:
                       - tier1
                       - tier1-ubuntu
+                  - key: failure-domain.beta.kubernetes.io/zone
+                    operator: In
+                    values: ["${ZONE}"]
 
       tolerations:
         - effect: "NoSchedule"

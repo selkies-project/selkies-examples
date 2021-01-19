@@ -26,7 +26,7 @@ spec:
     - ReadOnlyMany
   claimRef:
     namespace: kube-system
-    name: pod-broker-image-cache-${TS}
+    name: ${ZONE}-pod-broker-image-cache-${TS}
   gcePersistentDisk:
     pdName: ${PD_NAME}
     fsType: ext4

@@ -47,6 +47,9 @@ spec:
               - matchExpressions:
                   - key: app.broker/tier
                     operator: Exists
+                  - key: failure-domain.beta.kubernetes.io/zone
+                    operator: In
+                    values: ["${ZONE}"]
                   # Wait for container init else GPU driver triggers reboot that can corrupt the docker directory while we are modifying it.
                   - key: cloud.google.com/gke-accelerator-initialized
                     operator: In

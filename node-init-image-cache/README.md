@@ -57,11 +57,26 @@ export PROJECT_ID=YOUR_PROJECT
 gcloud config set project ${PROJECT_ID?}
 ```
 
-## Building the cache disk
+## Default cache build and deploy for all clusters in project
+
+1. Set the disk size in gigabytes of the cache disk:
+
+```
+DISK_SIZE_GB=256
+```
+
+2. Build cache image, zonal disks and deploy daemonsets for all clusters in project.
+
+```bash
+gcloud builds submit --project=${PROJECT_ID?} --substitutions=_DISK_SIZE_GB=${DISK_SIZE_GB?}
+```
+
+## (optional per-zone deployment) Building the cache disk
 
 1. Set the zone and disk size in gigabytes to provision the disk in:
 
 ```
+REGION=us-west1
 ZONE=us-west1-a
 DISK_SIZE_GB=256
 ```
@@ -69,7 +84,7 @@ DISK_SIZE_GB=256
 2. Create the GCE disk image containing a cache of the core Selkies images using Cloud Build and Packer:
 
 ```bash
-(cd build/selkies-image-cache && gcloud builds submit --project=${PROJECT_ID} --substitutions=_PROVISION_ZONE=${ZONE},_DISK_SIZE_GB=${DISK_SIZE_GB},_USE_LAST_IMAGE="false")
+(cd build/selkies-image-cache && gcloud builds submit --project=${PROJECT_ID?} --substitutions=_PROVISION_REGION=${REGION?},_PROVISION_ZONE=${ZONE?},_DISK_SIZE_GB=${DISK_SIZE_GB?},_USE_LAST_IMAGE="false")
 ```
 
 > NOTE: you can include other images by adding them to the file: `build/selkies-image-cache/scripts/image_list.txt`
@@ -79,7 +94,7 @@ DISK_SIZE_GB=256
 3. Create persistent disk from image:
 
 ```bash
-(cd build/gce-pd && gcloud builds submit --project=${PROJECT_ID} --substitutions=_DISK_ZONE=${ZONE},_DISK_SIZE_GB=${DISK_SIZE_GB})
+(cd build/gce-pd && gcloud builds submit --project=${PROJECT_ID?} --substitutions=_DISK_ZONE=${ZONE?},_DISK_SIZE_GB=${DISK_SIZE_GB?})
 ```
 
 ## Installing the DaemonSet
@@ -87,11 +102,7 @@ DISK_SIZE_GB=256
 1. Deploy the PersistentVolume, PersistentVolumeClaim and DaemonSet to the cluster:
 
 ```bash
-REGION=us-west1
-```
-
-```bash
-(cd manifests && gcloud builds submit --project=${PROJECT_ID} --substitutions=_REGION=${REGION},_DISK_ZONE=${ZONE})
+(cd manifests && gcloud builds submit --project=${PROJECT_ID?} --substitutions=_REGION=${REGION?},_DISK_ZONE=${ZONE?})
 ```
 
 > NOTE: this creates 2 DaemonSets, one for the gpu-cos node pool and other for the tier1 node pool. The gpu-cos DaemonSet uses the pre-installed `cos-nvidia-installer:fixed` image, which only exists on nodes with GPUs attached.

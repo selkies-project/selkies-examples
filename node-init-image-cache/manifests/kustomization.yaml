@@ -22,6 +22,8 @@ configMapGenerator:
     files:
       - inject-images.sh
 
+namePrefix: ${ZONE}-
+
 resources:
   - pod-broker-image-cache-pv.yaml
   - pod-broker-image-loader-gpu-cos-ds.yaml

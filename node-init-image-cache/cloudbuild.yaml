@@ -1,0 +1,85 @@
+# Copyright 2021 The Selkies Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+timeout: 7200s
+substitutions:
+  _PROVISION_MACHINE_TYPE: e2-standard-8
+  _DISK_SIZE_GB: "256"
+  _PULL_ALL_GCR: "true"
+tags:
+  - selkies-image-cache-image-project
+steps:
+  ###
+  # Evaluate clusters in project, obtain their region and zone.
+  ###
+  - name: gcr.io/cloud-builders/gcloud
+    id: fetch-project-clusters
+    entrypoint: bash
+    args:
+      - -exc
+      - |
+        # Fetch cluster and zone info using script.
+        # output writes clusters.txt, zones.txt, and cluster_region_zone.txt.
+        ./scripts/get_disk_locations.sh
+        cat clusters.txt
+        cat zones.txt
+        cat cluster_region_zone.txt
+  ###
+  # Create image cache for project
+  ###
+  - name: gcr.io/cloud-builders/gcloud
+    id: create-cache-image
+    entrypoint: bash
+    args:
+      - -exc
+      - |
+        # Select first region in broker VPC to run provisioner in.
+        IFS=',' read -ra ZONE_REGION <<< $(head -1 cluster_region_zone.txt)
+
+        # Use the last image as a cached starting point if it's present.
+        USE_LAST_IMAGE="true"
+        CURR_IMAGE=$(gcloud compute images list -q --project ${PROJECT_ID} --filter='name~selkies-image-cache' --limit=1 --format='value(name)')
+        if [[ -z "$${CURR_IMAGE}" ]]; then USE_LAST_IMAGE="false"; fi
+
+        cd build/selkies-image-cache
+        gcloud builds submit --substitutions=_PROVISION_REGION=$${ZONE_REGION[1]},_PROVISION_ZONE=$${ZONE_REGION[0]},_DISK_SIZE_GB=${_DISK_SIZE_GB},_USE_LAST_IMAGE="$${USE_LAST_IMAGE}"
+  ###
+  # Create cache disk for each zone.
+  ###
+  - name: gcr.io/cloud-builders/gcloud
+    id: create-cache-disks
+    entrypoint: bash
+    args:
+      - -exc
+      - |
+        cd build/gce-pd
+        cat /workspace/zones.txt | xargs -P4 -I {} gcloud builds submit --project=${PROJECT_ID} --substitutions=_DISK_ZONE={},_DISK_SIZE_GB=${_DISK_SIZE_GB}
+  ###
+  # Create image cache loader daemonsets on clusters
+  ###
+  - name: gcr.io/cloud-builders/gcloud
+    id: install-daemonsets
+    entrypoint: bash
+    args:
+      - -exc
+      - |
+        # Create text file with build args that will be passed to xargs to run the deployment in parallel.
+        rm -f build_args.txt
+        while IFS= read -r line; do
+          IFS=',' read -ra CLUSTER <<< "$line"
+          echo "_REGION=$${CLUSTER[1]},_DISK_ZONE=$${CLUSTER[0]}" >> build_args.txt
+        done < "cluster_region_zone.txt"
+
+        cd manifests
+        cat /workspace/build_args.txt | xargs -P4 -I {} gcloud builds submit --project=${PROJECT_ID} --substitutions={}
