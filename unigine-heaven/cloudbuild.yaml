@@ -16,6 +16,9 @@ substitutions:
   _REGION: us-west1
   _NAMESPACE: pod-broker-system
 
+tags:
+  - vdi-unigine-heaven-manifests
+
 steps:
   ###
   # Deploy manifests to cluster.

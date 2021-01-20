@@ -21,6 +21,9 @@ substitutions:
   _IMAGE_TAG: latest
   _INSTALLER_GCS: gs://cloud-solutions-images-vdi/unigine/Unigine_Heaven-4.0.run
 
+tags:
+  - vdi-unigine-heaven-images
+
 ###
 # Images to be pushed
 ###
