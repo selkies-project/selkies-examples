@@ -29,17 +29,17 @@ import input.attributes.request.http as http_request
 # This policy uses the 'hd' field of the JWT payload to allow all users in a domain.
 
 token := {"payload": payload} {
-	[header, payload, signature] := io.jwt.decode(http_request.headers["x-goog-iap-jwt-assertion"])
+  [header, payload, signature] := io.jwt.decode(http_request.headers["x-goog-iap-jwt-assertion"])
 }
 
 default allow = false
 
 allowed {
-	token.payload.hd == "example.com"
+  token.payload.hd == "example.com"
 }
 
 allowed {
-	token.payload.hd == "example.io"
+  token.payload.hd == "example.io"
 }
 
 ###
@@ -51,8 +51,8 @@ allow = response {
   response = {
     "allowed": allowed,
     "headers": {
-		"x-broker-user": split(token.payload.email, "@")[0],
-		"x-broker-id-tok": sprintf("accounts.google.com:%s", [token.payload.email])
-	}
+      "x-broker-user": split(token.payload.email, "@")[0],
+      "x-broker-id-tok": sprintf("accounts.google.com:%s", [token.payload.email])
+    }
   }
 }

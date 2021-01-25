@@ -1,4 +1,4 @@
-# Copyright 2020 Google LLC
+# Copyright 2021 The Selkies Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,33 +16,25 @@ package istio.authz
 
 import input.attributes.request.http as http_request
 
-# When using OIDC with Google Identities, the following relavent headers are passed:
-#
-# x-goog-authenticated-user-email: "securetoken.google.com/PROJECT_ID:EMAIL"
-#   where:
-#     PROJECT_ID: the project ID where Google Identity Platform is hosted from.
-#     EMAIL: the email address 
-
+# Extract the JWT token from the request
 token := {"payload": payload} {
   [header, payload, signature] := io.jwt.decode(http_request.headers["x-goog-iap-jwt-assertion"])
 }
 
-auth := {"email": email, "domain": domain} {
-  [email, domain] := split(split(http_request.headers["x-goog-authenticated-user-email"], ":")[1], "@")
+# Extract the provider from the GCIP spec
+provider_name := token.payload.gcip.firebase.sign_in_provider
+
+default allow = true
+
+provider("google.com", p) = email {
+  email := p.gcip.email
 }
 
-default allow = false
-
-allowed {
-  auth.domain == "example.com"
-}
-
-allowed {
-  auth.domain == "example.net"
-}
+allowed := true
 
 ###
 # Add headers to response.
+#   x-goog-authenticated-user-email: compatible header with non-migrated pod-broker configurations.
 #   x-broker-user: Broker will set the Template data .User property to this value.
 #   x-broker-id-tok: Broker uses this value generate a unique id for user. This is also used for VirtualService routing.
 ###
@@ -50,8 +42,9 @@ allow = response {
   response = {
     "allowed": allowed,
     "headers": {
-	    "x-broker-user": split(auth.email, "@")[0],
-	    "x-broker-id-tok": sprintf("accounts.google.com:%s", [auth.email])
+      "x-goog-authenticated-user-email": sprintf("accounts.google.com:%s", [provider(provider_name, token.payload)]),
+		  "x-broker-user": split(provider(provider_name, token.payload), "@")[0],
+		  "x-broker-id-tok": sprintf("accounts.google.com:%s", [provider(provider_name, token.payload)])
 	  }
   }
 }
