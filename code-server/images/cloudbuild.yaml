@@ -35,6 +35,9 @@ images: [
     # tinyfilemanager
     'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-tinyfilemanager:${_IMAGE_TAG}',
     'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-tinyfilemanager:latest',
+    # watchdog
+    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-watchdog:${_IMAGE_TAG}',
+    'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-watchdog:latest',
 ]
 
 steps:
@@ -93,3 +96,31 @@ steps:
         ]
   waitFor:
     - tinyfilemanager
+
+###
+# watchdog image
+###
+- name: 'gcr.io/cloud-builders/docker'
+  id: watchdog-pull
+  entrypoint: 'bash'
+  args: ["-c", "if [[ '${_USE_CACHE}' == 'true' ]]; then (docker pull gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-watchdog:latest || exit 0); fi"]
+  waitFor: ["-"]
+- name: 'gcr.io/cloud-builders/docker'
+  id: watchdog
+  args: [
+            'build',
+            '-t', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-watchdog:${_IMAGE_TAG}',
+            '--cache-from', 'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-watchdog:latest',
+            'watchdog'
+        ]
+  waitFor:
+    - watchdog-pull
+- name: 'gcr.io/cloud-builders/docker'
+  id: watchdog-tags
+  args: [
+            'tag',
+            'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-watchdog:${_IMAGE_TAG}',
+            'gcr.io/${PROJECT_ID}/${_IMAGE_PREFIX}-watchdog:latest',
+        ]
+  waitFor:
+    - watchdog

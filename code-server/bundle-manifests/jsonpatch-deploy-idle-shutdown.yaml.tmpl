@@ -1,0 +1,46 @@
+# Copyright 2021 The Selkies Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+{{- $brokerRoute := "broker" }}
+{{- if eq .AppSpec.Type "deployment" }}
+  {{- $brokerRoute = "reservation-broker" }}
+{{- end}}
+
+{{- $idleShutdownTimeout := -1 }}
+{{- if .AppParams.idleShutdownTimeout }}
+  {{- $idleShutdownTimeout = (atoi .AppParams.idleShutdownTimeout) }}
+{{- end}}
+
+{{- if gt $idleShutdownTimeout 0 }}
+###
+# Patch to add watchdog container
+###
+- op: add
+  path: "/spec/template/spec/containers/-"
+  value:
+    name: watchdog
+    image: gcr.io/cloud-solutions-images/code-server-gke-watchdog:latest
+    command: ["/code_server_watchdog"]
+    args:
+      - "-timeout={{ $idleShutdownTimeout }}"
+      - "-health_endpoint=http://localhost:3180/healthz"
+      - "-broker_cookie=broker_{{.App}}={{.CookieValue}}"
+      - "-broker_endpoint=http://istio-ingressgateway.istio-system.svc.cluster.local/{{ $brokerRoute }}/{{ .App }}/"
+      - "-broker_host={{.SysParams.Domain}}"
+{{- else }}
+# Cannot have empty patch, so this is effectively a no-op.
+- op: test
+  path: /spec/template/metadata/labels/app
+  value: code
+{{- end}}

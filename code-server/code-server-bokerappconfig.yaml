@@ -39,6 +39,8 @@ spec:
       displayName: "Use Xpra"
       default: "false"
   appParams:
+    - name: idleShutdownTimeout
+      default: "1800" # seconds
     - name: Domain
       default: code.endpoints.${PROJECT_ID}.cloud.goog
     - name: WebPreview3000
@@ -57,6 +59,10 @@ spec:
     tinyfilemanager:
       oldRepo: gcr.io/cloud-solutions-images/code-server-gke-tinyfilemanager
       newRepo: gcr.io/${PROJECT_ID}/code-server-gke-tinyfilemanager
+      newTag: latest
+    watchdog:
+      oldRepo: gcr.io/cloud-solutions-images/code-server-gke-watchdog
+      newRepo: gcr.io/${PROJECT_ID}/code-server-gke-watchdog
       newTag: latest
   defaultTier: chill
   nodeTiers:
