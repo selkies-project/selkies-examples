@@ -16,6 +16,24 @@ package istio.authz
 
 import input.attributes.request.http as http_request
 
+# Get list of allowed users from configmap
+# ConfigMap is loaded automatically by kube-mgmt, see: https://github.com/open-policy-agent/kube-mgmt#json-loading
+# Example config map:
+#   apiVersion: v1
+#   kind: ConfigMap
+#   metadata:
+#     name: selkies-opa-users
+#     namespace: opa
+#     labels: openpolicyagent.org/data: opa
+#   data:
+#     users.json: |-
+#       {
+#           "allowed_users": [
+#               "user@example.com"
+#           ]
+#       }
+import data.opa["selkies-opa-users"]["users.json"].allowed_users as selkies_users
+
 # Extract the JWT token from the request
 token := {"payload": payload} {
   [header, payload, signature] := io.jwt.decode(http_request.headers["x-goog-iap-jwt-assertion"])
@@ -24,13 +42,17 @@ token := {"payload": payload} {
 # Extract the provider from the GCIP spec
 provider_name := token.payload.gcip.firebase.sign_in_provider
 
-default allow = true
-
 provider("google.com", p) = email {
   email := p.gcip.email
 }
 
-allowed := true
+# Allow selkies users
+allowed = true {
+    some i; selkies_users[i] == provider(provider_name, token.payload)
+}
+
+# Default deny
+default allowed = false
 
 ###
 # Add headers to response.

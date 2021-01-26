@@ -170,3 +170,5 @@ spec:
           name: opa-istio-config
       - name: kube-mgmt
         image: openpolicyagent/kube-mgmt:0.11
+        args:
+          - --enable-data

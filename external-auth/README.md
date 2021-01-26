@@ -30,20 +30,35 @@ export REGION=us-west1
 gcloud builds submit --project ${PROJECT_ID?} --substitutions=_REGION=${REGION?},_POLICY=${POLICY?}
 ```
 
+4. Create a ConfigMap to authorize your user:
+
+```bash
+EMAIL=$(gcloud config get-value account)
+```
+
+```
+cat - > policies/users.json <<EOF
+{
+    "allowed_users": [
+        "${EMAIL}"
+    ]
+}
+EOF
+```
+
+```bash
+kubectl -n opa create configmap selkies-opa-users \
+    --from-file policies/users.json \
+    --dry-run=client -o yaml | \
+        kubectl label -f- --dry-run=client -o yaml --local openpolicyagent.org/data=opa | \
+            kubectl apply -f -
+```
+
+> NOTE: the json content in this configmap is automatically loaded using the kube-mgmt sidecar. See also: https://github.com/open-policy-agent/kube-mgmt#json-loading
+
 ## Enable Identity Platform
 
 1. Enable external identities for IAP:
     a. Open the (IAP console page)[] and select the `istio-ingressgateway` resource.
     b. On the side info panel, click __START__ next to the "Use external identities for authorization" section.
     c. If prompted, enable the __Identity Toolkit API__.
-
-
-## (WIP) - Install Ping Federate
-
-1. If you don't already have a [Ping Federate](https://www.pingidentity.com/en/software/pingfederate.html) account, create one now.
-2. Deploy Ping Federate to your cluster:
-
-```bash
-git clone https://github.com/pingidentity/pingidentity-devops-getting-started.git
-cd pingidentity-devops-getting-started/20-kubernetes/06-clustered-pingfederate
-```
