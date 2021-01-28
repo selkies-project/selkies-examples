@@ -23,7 +23,9 @@ import input.attributes.request.http as http_request
 #     PROJECT_ID: the project ID where Google Identity Platform is hosted from.
 #     EMAIL: the email address 
 
-token := {"payload": payload} {
+# Extract the JWT token from the request
+default token = {"payload": {}}
+token = {"payload": payload} {
   [header, payload, signature] := io.jwt.decode(http_request.headers["x-goog-iap-jwt-assertion"])
 }
 

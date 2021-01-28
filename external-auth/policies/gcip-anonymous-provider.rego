@@ -17,20 +17,29 @@ package istio.authz
 import input.attributes.request.http as http_request
 
 # Extract the JWT token from the request
-token := {"payload": payload} {
+default token = {"payload": {}}
+token = {"payload": payload} {
   [header, payload, signature] := io.jwt.decode(http_request.headers["x-goog-iap-jwt-assertion"])
 }
 
 # Extract the provider from the GCIP spec
-provider_name := token.payload.gcip.firebase.sign_in_provider
+default provider = {"name": "cookie"}
+provider = {"name": name} {
+  name := token.payload.gcip.firebase.sign_in_provider
+}
 
-default allow = true
+provider_email("cookie", p) = email {
+  values := split(http_request.headers["cookie"], ";")
+  some i; re_match("^broker_.*?=.*?#.*$", values[i])
+  email := split(split(values[i], "=")[1], "#")[0]
+}
 
-provider("anonymous", p) = email {
+provider_email("anonymous", p) = email {
   email := sprintf("anonymous@%s", p.gcip.user_id)
 }
 
-allowed := true
+# Default allow
+default allowed = true
 
 ###
 # Add headers to response.
@@ -42,9 +51,9 @@ allow = response {
   response = {
     "allowed": allowed,
     "headers": {
-      "x-goog-authenticated-user-email": sprintf("accounts.google.com:%s", [provider(provider_name, token.payload)]),
-		  "x-broker-user": split(provider(provider_name, token.payload), "@")[0],
-		  "x-broker-id-tok": sprintf("accounts.google.com:%s", [provider(provider_name, token.payload)])
+      "x-goog-authenticated-user-email": sprintf("accounts.google.com:%s", [provider_email(provider.name, token.payload)]),
+		  "x-broker-user": split(provider_email(provider.name, token.payload), "@")[0],
+		  "x-broker-id-tok": sprintf("accounts.google.com:%s", [provider_email(provider.name, token.payload)])
 	  }
   }
 }

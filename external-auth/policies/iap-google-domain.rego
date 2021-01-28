@@ -28,7 +28,8 @@ import input.attributes.request.http as http_request
 #    }
 # This policy uses the 'hd' field of the JWT payload to allow all users in a domain.
 
-token := {"payload": payload} {
+default token = {"payload": {}}
+token = {"payload": payload} {
   [header, payload, signature] := io.jwt.decode(http_request.headers["x-goog-iap-jwt-assertion"])
 }
 

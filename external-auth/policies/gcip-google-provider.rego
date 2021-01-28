@@ -35,20 +35,24 @@ import input.attributes.request.http as http_request
 import data.opa["selkies-opa-users"]["users.json"].allowed_users as selkies_users
 
 # Extract the JWT token from the request
-token := {"payload": payload} {
+default token = {"payload": {}}
+token = {"payload": payload} {
   [header, payload, signature] := io.jwt.decode(http_request.headers["x-goog-iap-jwt-assertion"])
 }
 
 # Extract the provider from the GCIP spec
-provider_name := token.payload.gcip.firebase.sign_in_provider
+default provider = {"name": "cookie"}
+provider = {"name": name} {
+  name := token.payload.gcip.firebase.sign_in_provider
+}
 
-provider("google.com", p) = email {
+provider_email("google.com", p) = email {
   email := p.gcip.email
 }
 
 # Allow selkies users
 allowed = true {
-    some i; selkies_users[i] == provider(provider_name, token.payload)
+    some i; selkies_users[i] == provider_email(provider.name, token.payload)
 }
 
 # Default deny
@@ -64,9 +68,9 @@ allow = response {
   response = {
     "allowed": allowed,
     "headers": {
-      "x-goog-authenticated-user-email": sprintf("accounts.google.com:%s", [provider(provider_name, token.payload)]),
-		  "x-broker-user": split(provider(provider_name, token.payload), "@")[0],
-		  "x-broker-id-tok": sprintf("accounts.google.com:%s", [provider(provider_name, token.payload)])
+      "x-goog-authenticated-user-email": sprintf("accounts.google.com:%s", [provider_email(provider.name, token.payload)]),
+		  "x-broker-user": split(provider_email(provider.name, token.payload), "@")[0],
+		  "x-broker-id-tok": sprintf("accounts.google.com:%s", [provider_email(provider.name, token.payload)])
 	  }
   }
 }
