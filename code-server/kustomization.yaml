@@ -35,4 +35,4 @@ configMapGenerator:
 
 resources:
   - code-gateway.yaml
-  - code-server-bokerappconfig.yaml
+  - code-server-brokerappconfig.yaml
