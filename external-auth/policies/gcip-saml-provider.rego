@@ -57,7 +57,7 @@ allowed = true {
 
 # Allow deployment type watchdog requests
 allowed = true {
-  regex.match("/reservation-broker/.*", http_request.path)
+  regex.match("/reservation-broker/shutdown/", http_request.path)
   provider_email("cookie", token.payload) == "watchdog@localhost"
 }
 
