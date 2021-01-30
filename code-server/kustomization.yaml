@@ -17,21 +17,8 @@ kind: Kustomization
 
 namespace: pod-broker-system
 
-generatorOptions:
-  # Generate stable ConfigMap names for compatability with the BrokerAppConfig configMapRef.
-  disableNameSuffixHash: true
-
-configMapGenerator:
-  - name: code-server-manifests-1.2.0
-    files:
-      - bundle-manifests/jsonpatch-deploy-code-pvc.yaml.tmpl
-      - bundle-manifests/jsonpatch-deploy-idle-shutdown.yaml.tmpl
-      - bundle-manifests/jsonpatch-deploy-use-xpra.yaml.tmpl
-      - bundle-manifests/patch-user-pod.yaml.tmpl
-      - bundle-manifests/resource-code-service.yaml
-      - bundle-manifests/resource-code-serviceaccount.yaml
-      - bundle-manifests/resource-code-statefulset.yaml
-      - bundle-manifests/resource-code-virtual-service.yaml.tmpl
+bases:
+  - bundle-manifests/
 
 resources:
   - code-gateway.yaml

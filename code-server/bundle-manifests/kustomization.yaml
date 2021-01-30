@@ -1,0 +1,19 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+generatorOptions:
+  # Generate stable ConfigMap names for compatability with the BrokerAppConfig configMapRef.
+  disableNameSuffixHash: true
+
+configMapGenerator:
+  - name: code-server-manifests-1.2.0
+    namespace: pod-broker-system
+    files:
+      - jsonpatch-deploy-code-pvc.yaml.tmpl
+      - jsonpatch-deploy-idle-shutdown.yaml.tmpl
+      - jsonpatch-deploy-use-xpra.yaml.tmpl
+      - patch-user-pod.yaml.tmpl
+      - resource-code-service.yaml
+      - resource-code-serviceaccount.yaml
+      - resource-code-statefulset.yaml
+      - resource-code-virtual-service.yaml.tmpl
