@@ -38,6 +38,12 @@ provider_email("anonymous", p) = email {
   email := sprintf("anonymous@%s", p.gcip.user_id)
 }
 
+# Allow deployment type watchdog requests
+allowed = true {
+  regex.match("/reservation-broker/.*", http_request.path)
+  provider_email("cookie", token.payload) == "watchdog@localhost"
+}
+
 # Default allow
 default allowed = true
 

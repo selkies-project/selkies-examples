@@ -60,7 +60,13 @@ provider_email("anonymous", p) = email {
 
 # Allow selkies users
 allowed = true {
-    some i; selkies_users[i] == provider_email(provider.name, token.payload)
+  some i; regex.match(selkies_users[i], provider_email(provider.name, token.payload))
+}
+
+# Allow deployment type watchdog requests
+allowed = true {
+  regex.match("/reservation-broker/.*", http_request.path)
+  provider_email("cookie", token.payload) == "watchdog@localhost"
 }
 
 # Default deny
