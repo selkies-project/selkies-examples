@@ -18,6 +18,9 @@ metadata:
   name: code
 spec:
   template:
+    metadata:
+      annotations:
+        app.broker/session-key: "{{default "" .AppParams.sessionKey}}"
     spec:
       nodeSelector:
         app.broker/tier: {{ .NodeTier.NodeLabel }}

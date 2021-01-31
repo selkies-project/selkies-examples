@@ -27,6 +27,7 @@ spec:
     metadata:
       labels:
         app: code
+      annotations: {}
     spec:
       terminationGracePeriodSeconds: 10
       serviceAccountName: code
