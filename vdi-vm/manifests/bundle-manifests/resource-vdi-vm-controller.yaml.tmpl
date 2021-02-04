@@ -157,7 +157,7 @@ spec:
             - name: INSTANCE_OS
               value: "{{.AppParams.instanceOS}}"
             - name: INSTANCE_NAME
-              value: "{{.FullName}}"
+              value: "{{.FullName}}-{{.Region}}"
             - name: INSTANCE_ZONE
               value: "{{.AppParams.instanceZone}}"
             - name: INSTANCE_TEMPLATE
