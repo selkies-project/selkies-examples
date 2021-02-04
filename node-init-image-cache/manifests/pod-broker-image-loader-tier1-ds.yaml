@@ -18,6 +18,7 @@ metadata:
   name: pod-broker-image-loader-tier1-${TS}
   labels:
     app: pod-broker-image-loader
+    pd-name: ${PD_NAME}
 spec:
   selector:
     matchLabels:
@@ -26,6 +27,7 @@ spec:
     metadata:
       labels:
         app: pod-broker-image-loader
+        pd-name: ${PD_NAME}
     spec:
       serviceAccountName: pod-broker-node-init
 
@@ -42,6 +44,8 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
               - matchExpressions:
+                  - key: app.broker/cache-pd
+                    operator: DoesNotExist
                   - key: app.broker/tier
                     operator: In
                     values:
@@ -135,6 +139,12 @@ spec:
               cat - | tee /tmp/init.sh <<EOF
               # update node label
               kubectl label node "${MY_NODE_NAME}" --overwrite app.broker/image-load-initialized=true
+
+              # maintain node label applied by cloudbuild if present.
+              label=$(kubectl get node ${MY_NODE_NAME} -o jsonpath='{.metadata.labels.app\.broker/cache-pd}')
+              if [[ -n "${label}" ]]; then
+                kubectl label node "${MY_NODE_NAME}" --overwrite app.broker/cache-pd=${label}
+              fi
               EOF
               chmod +x /tmp/init.sh
               while true; do
@@ -146,3 +156,5 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
+            - name: PD_NAME
+              value: ${PD_NAME}

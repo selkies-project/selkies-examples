@@ -1,0 +1,9 @@
+[{
+    "op": "replace",
+    "path": "/spec/template/spec/affinity/nodeAffinity/requiredDuringSchedulingIgnoredDuringExecution/nodeSelectorTerms/0/matchExpressions/0",
+    "value": {
+        "key": "app.broker/cache-pd",
+        "operator": "In",
+        "values": ["${PD_NAME}"]
+    }
+}]

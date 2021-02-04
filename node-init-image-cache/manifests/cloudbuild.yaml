@@ -45,25 +45,13 @@ steps:
     id: deploy-manifests
     entrypoint: "bash"
     args:
-      - "-exc"
+      - "-ex"
       - "-o"
       - "pipefail"
-      - |
-        # Delete old daemonset, pvc, and pv.
-        /builder/kubectl.bash delete -n kube-system ds -l app=pod-broker-image-loader || true
-        /builder/kubectl.bash delete -n kube-system pv,pvc -l app=image-cache || true
-
-        sed -i -e 's/$${ZONE}/${_DISK_ZONE}/g' kustomization.yaml
-
-        kubectl.1.17 kustomize | \
-          sed \
-            -e 's/$${PROJECT_ID}/${PROJECT_ID}/g' \
-            -e 's/$${PD_NAME}/'$(cat pd_name)'/g' \
-            -e 's/$${TS}/'$(cat pd_ts)'/g' \
-            -e 's/$${ZONE}/${_DISK_ZONE}/g' | \
-        /builder/kubectl.bash apply -f -
+      - deploy_manifests.sh
     env:
       - "PROJECT_ID=${PROJECT_ID}"
+      - "DISK_ZONE=${_DISK_ZONE}"
       - "CLOUDSDK_CORE_PROJECT=${PROJECT_ID}"
       - "CLOUDSDK_COMPUTE_REGION=${_REGION}"
       - "CLOUDSDK_CONTAINER_CLUSTER=broker-${_REGION}"

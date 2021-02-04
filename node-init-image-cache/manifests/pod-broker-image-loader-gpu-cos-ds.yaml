@@ -18,6 +18,7 @@ metadata:
   name: pod-broker-image-loader-gpu-cos-${TS}
   labels:
     app: pod-broker-image-loader
+    pd-name: ${PD_NAME}
 spec:
   selector:
     matchLabels:
@@ -26,6 +27,7 @@ spec:
     metadata:
       labels:
         app: pod-broker-image-loader
+        pd-name: ${PD_NAME}
     spec:
       serviceAccountName: pod-broker-node-init
 
@@ -45,6 +47,8 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
               - matchExpressions:
+                  - key: app.broker/cache-pd
+                    operator: DoesNotExist
                   - key: app.broker/tier
                     operator: Exists
                   - key: failure-domain.beta.kubernetes.io/zone
@@ -82,6 +86,14 @@ spec:
           configMap:
             name: image-loader
             defaultMode: 0755
+
+        ###
+        # Kubectl from GPU node host
+        ###
+        - name: host-kubectl
+          hostPath:
+            path: /home/kubernetes/bin/kubectl
+            type: File
 
       # Use the host PID namespace, required to perform mounts on host using nsenter.
       hostPID: true
@@ -127,17 +139,21 @@ spec:
         # See also: https://github.com/kubernetes/kubernetes/issues/18307
         ###
         - name: update-labels
-          image: alpine:3.9
-          command: ["/bin/sh"]
+          image: "cos-nvidia-installer:fixed"
+          imagePullPolicy: Never
+          command: ["/bin/bash"]
           args:
             - -ec
             - |
-              grep -q "edge/testing" /etc/apk/repositories || echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories
-              apk add -u kubectl
-
               cat - | tee /tmp/init.sh <<EOF
               # update node label
               kubectl label node "${MY_NODE_NAME}" --overwrite app.broker/image-load-initialized=true
+
+              # maintain node label applied by cloudbuild if present.
+              label=$(kubectl get node ${MY_NODE_NAME} -o jsonpath='{.metadata.labels.app\.broker/cache-pd}')
+              if [[ -n "${label}" ]]; then
+                kubectl label node "${MY_NODE_NAME}" --overwrite app.broker/cache-pd=${label}
+              fi
               EOF
               chmod +x /tmp/init.sh
               while true; do
@@ -149,3 +165,10 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
+            - name: PD_NAME
+              value: ${PD_NAME}
+            - name: DS_NAME
+              value: ${ZONE}-pod-broker-image-loader-gpu-cos-${TS}
+          volumeMounts:
+            - name: host-kubectl
+              mountPath: /usr/local/bin/kubectl

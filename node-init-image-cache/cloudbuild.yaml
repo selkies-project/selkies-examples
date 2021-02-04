@@ -53,7 +53,7 @@ steps:
         if [[ -z "$${CURR_IMAGE}" ]]; then USE_LAST_IMAGE="false"; fi
 
         cd build/selkies-image-cache
-        gcloud builds submit --substitutions=_PROVISION_REGION=$${ZONE_REGION[1]},_PROVISION_ZONE=$${ZONE_REGION[0]},_DISK_SIZE_GB=${_DISK_SIZE_GB},_USE_LAST_IMAGE="$${USE_LAST_IMAGE}"
+        gcloud builds submit --substitutions=_PROVISION_REGION=$${ZONE_REGION[1]},_PROVISION_ZONE=$${ZONE_REGION[0]},_DISK_SIZE_GB=${_DISK_SIZE_GB},_USE_LAST_IMAGE="$${USE_LAST_IMAGE},_PULL_ALL_GCR=${_PULL_ALL_GCR},_PROVISION_MACHINE_TYPE=${_PROVISION_MACHINE_TYPE}"
   ###
   # Create cache disk for each zone.
   ###
