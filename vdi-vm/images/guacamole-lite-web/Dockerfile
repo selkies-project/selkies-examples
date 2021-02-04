@@ -19,5 +19,13 @@ WORKDIR /usr/share/nginx/html/
 COPY src/*.js src/index.html ./
 COPY config/default.conf /etc/nginx/conf.d/default.conf
 
+# Cache web assets
+ADD https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js ./jquery.min.js
+ADD https://cdn.jsdelivr.net/npm/guacamole-common-js@1.3.0/dist/guacamole-common.min.js ./guacamole-common.min.js
+ADD https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.9/vue.min.js ./vue.min.js
+ADD https://cdnjs.cloudflare.com/ajax/libs/vuetify/2.1.12/vuetify.min.js ./vuetify.min.js
+ADD https://cdn.jsdelivr.net/npm/vue-spinner@1.0.3/dist/vue-spinner.min.js ./vue-spinner.min.js
+RUN chmod 0644 *
+
 # Patch index.html to fetch latest version of javascript source
 RUN sed -i 's|script src="\(.*\)?ts=.*"|script src="\1?ts='$(date +%s)'"|g' index.html

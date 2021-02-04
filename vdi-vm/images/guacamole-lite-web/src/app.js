@@ -52,6 +52,39 @@ var app = new Vue({
 });
 
 $(document).ready(() => {
+    navigator.permissions.query({
+        name: 'clipboard-read'
+    }).then(permissionStatus => {
+        // Will be 'granted', 'denied' or 'prompt':
+        if (permissionStatus.state === 'granted') {
+            guacLite.clipboardStatus = 'enabled';
+        }
+
+        // Listen for changes to the permission state
+        permissionStatus.onchange = () => {
+            if (permissionStatus.state === 'granted') {
+                guacLite.clipboardStatus = 'enabled';
+            }
+        };
+    });
+
+    // Actions to take whenever window changes focus
+    window.addEventListener('focus', () => {
+        // Send clipboard contents.
+        navigator.clipboard.readText()
+            .then(text => {
+                console.log("sending clipboard content with length " + text.length);
+                // Create stream with proper mimetype
+                var stream = guacLite.guac.createClipboardStream("text/plain");
+                writer = new Guacamole.StringWriter(stream);
+                writer.sendText(text);
+                writer.sendEnd();
+            })
+            .catch(err => {
+                console.log('Failed to read clipboard contents: ' + err);
+            });
+    });
+
     // Set the target element for the guacamole display.
     guacLite.element = document.getElementById("display");
 

@@ -44,6 +44,7 @@ class GuacamoleLite {
         this.connected = false;
         this.scaling = false;
         this.mouselock = false;
+        this.clipboardStatus = "disabled";
 
         this.lockedX = null;
         this.lockedY = null;
@@ -155,6 +156,38 @@ class GuacamoleLite {
         this.tunnel = new Guacamole.WebSocketTunnel(this.tunnel_url);
         this.guac = new Guacamole.Client(this.tunnel);
         this.guacDisplay = this.guac.getDisplay();
+
+        this.guac.onaudio = (stream, mimetype) => {
+            const context = Guacamole.AudioContextFactory.getAudioContext()
+            context.resume();
+            return Guacamole.AudioPlayer.getInstance(stream, mimetype);
+        }
+
+        this.guac.onclipboard = (stream, mimetype) => {
+            var reader;
+
+            // If the received data is text, read it as a simple string
+            if (/^text\//.exec(mimetype)) {
+                reader = new Guacamole.StringReader(stream);
+                // Assemble received data into a single string
+                var data = '';
+                reader.ontext = (text) => {
+                    data += text;
+                };
+                reader.onend = () => {
+                    console.log("read clipboard data, length: " + data.length);
+                    console.log("clipboardStatus: " + this.clipboardStatus);
+                    if (this.clipboardStatus === 'enabled') {
+                        navigator.clipboard.writeText(data)
+                            .catch(err => {
+                                console.log('Could not write text to local clipboard: ' + err);
+                            });
+                    }
+                }
+            } else {
+                console.log("unsupported clipboard mimetype: " + mimetype);
+            }
+        }
 
         // Add the display element
         this.element.appendChild(this.guacDisplay.getElement());

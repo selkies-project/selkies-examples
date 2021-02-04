@@ -39,6 +39,9 @@ class GuacamoleLiteToken {
      *   {Promise}
      */
     getTokenWithCredentials(username, password, n) {
+        // Full list of guacd settings:
+        //   https://guacamole.apache.org/doc/gug/configuring-guacamole.html#rdp
+        // Some of thse settings are overriden on the backend such as conn-type, hostname, port and security.
         return new Promise((resolve, reject) => {
             fetch(this.token_url, {
                 cache: 'no-cache',
@@ -51,7 +54,9 @@ class GuacamoleLiteToken {
                     'x-guacd-setting-cursor': "remote",
                     'x-guacd-setting-enable-wallpaper': "false",
                     'x-guacd-setting-username': username,
-                    'x-guacd-setting-password': btoa(password)
+                    'x-guacd-setting-password': btoa(password),
+                    'x-guacd-setting-color-depth': "32",
+                    'x-guacd-setting-disable-audio': "false",
                 }
             })
                 .then((result) => {

@@ -40,7 +40,6 @@ spec:
             host: {{.FullName}}-vm-controller
             port:
               number: 8080
-      websocketUpgrade: true
     ###
     # rule for guacamole-lite websocket
     ###
@@ -57,7 +56,6 @@ spec:
             host: {{.FullName}}-{{.ServiceName}}
             port:
               number: 8080    
-      websocketUpgrade: true
     ###
     # rule for guacamole-lite-token service
     ###

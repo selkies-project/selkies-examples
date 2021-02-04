@@ -40,7 +40,6 @@ spec:
             host: {{.FullName}}-{{.ServiceName}}
             port:
               number: 8080
-      websocketUpgrade: true
     ###
     # rule for gotty
     ###
@@ -57,7 +56,6 @@ spec:
             host: {{.FullName}}-{{.ServiceName}}-controller
             port:
               number: 9000
-      websocketUpgrade: true
     ###
     # rule for webrtc web interface
     ###

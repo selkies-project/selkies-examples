@@ -12,8 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM guacamole/guacd:1.1.0
+FROM guacamole/guacd:1.3.0
 
+USER 0
 RUN apt-get update && apt-get install -y curl ca-certificates
+
+USER 1000
 
 COPY watchdog.sh idle_shutdown.sh /
