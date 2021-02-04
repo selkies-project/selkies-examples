@@ -14,6 +14,10 @@
 
 {{- if eq .AppParams.instanceOS "windows"}}
 
+{{- $brokerCookie := .CookieValue }}
+{{- $brokerRoute := "broker" }}
+{{- $appName := .App }}
+
 apiVersion: v1
 kind: Service
 metadata:
@@ -177,15 +181,21 @@ spec:
           command: ["/watchdog.sh"]
           env:
           - name: BROKER_COOKIE
-            value: "broker_{{.App}}={{.CookieValue}}"
+            value: "broker_{{.App}}={{ $brokerCookie }}"
           - name: BROKER_ENDPOINT
-            value: "https://{{.SysParams.Domain}}/broker"
+            value: "https://{{.SysParams.Domain}}/{{ $brokerRoute }}"
+          - name: IN_CLUSTER_BROKER_ENDPOINT
+            value: "http://istio-ingressgateway.istio-system.svc.cluster.local/{{ $brokerRoute }}"
+          - name: BROKER_HOST
+            value: "{{.SysParams.Domain}}"
+          - name: IN_CLUSTER
+            value: "true"
           - name: CLIENT_ID
             value: "{{.ClientID}}"
           - name: POD_USER
             value: "{{.User}}"
           - name: APP_NAME
-            value: "{{.App}}"
+            value: "{{ $appName }}"
           - name: WATCHDOG_TIMEOUT
             value: "{{default 600 .AppParams.idleShutdownTimeout}}"
           volumeMounts:
