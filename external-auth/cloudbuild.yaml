@@ -34,7 +34,7 @@ steps:
           /builder/kubectl.bash apply -f -
         
         # Apply the policy
-        [[ ! -f ${_POLICY} ]] && "ERROR: Policy file not found: ${_POLCY}" && exit 1
+        [[ ! -f ${_POLICY} ]] && "ERROR: Policy file not found: ${_POLICY}" && exit 1
         kubectl -n opa create configmap selkies-opa-policy \
           --from-file policy.rego=${_POLICY} --dry-run -o yaml | \
           kubectl label -f- --dry-run -o yaml --local openpolicyagent.org/policy=rego | \
