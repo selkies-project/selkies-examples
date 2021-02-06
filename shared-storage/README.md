@@ -106,11 +106,12 @@ metadata:
   name: broker-shared-rook
   namespace: rook-nfs
 spec:
+  storageClassName: pd-balanced
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 10Gi
+      storage: 100Gi
 ---
 apiVersion: nfs.rook.io/v1alpha1
 kind: NFSServer
@@ -152,7 +153,7 @@ EOF
 4. Obtain the IP of the Rook pod:
 
 ```bash
-kubectl get endpoints broker-shared-rook -n rook-nfs -o jsonpath='{.subsets..addresses..ip}'
+kubectl get endpoints broker-shared-rook -n rook-nfs -o jsonpath='{.subsets..addresses..ip}'; echo
 ```
 
 5. Modify your BrokerAppConfig with the following AppParams to enabled the shared volume and persist the home directory to NFS:
