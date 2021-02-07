@@ -155,7 +155,7 @@ spec:
       containers:
       - name: opa
         #image: openpolicyagent/opa
-        image: openpolicyagent/opa:0.24.0-istio
+        image: openpolicyagent/opa:0.26.0-istio
         args:
         - "run"
         - "--server"
