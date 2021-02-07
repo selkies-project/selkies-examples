@@ -22,7 +22,9 @@ RUN \
         unzip \
         software-properties-common \
         libllvm6.0 \
-        xdotool
+        xdotool \
+        firefox \
+        rclone
 
 # Install OpenShot from PPA
 RUN \
