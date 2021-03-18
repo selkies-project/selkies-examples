@@ -14,6 +14,26 @@
 
 {{- if eq .AppParams.instanceOS "windows"}}
 
+{{- $enableVNC := false }}
+{{- $instancePort := 3389 }}
+{{- $protocol := "rdp" }}
+
+{{- if .UserParams.enableVNC }}
+  {{- if eq .UserParams.enableVNC "true" }}
+    {{- $enableVNC = true }}
+  {{- end}}
+{{- end}}
+{{- if .AppParams.enableVNC }}
+  {{- if eq .AppParams.enableVNC "true" }}
+    {{- $enableVNC = true }}
+  {{- end}}
+{{- end}}
+
+{{- if $enableVNC }}
+  {{- $protocol = "vnc" }}
+  {{- $instancePort = 5900 }}
+{{- end}}
+
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
@@ -70,9 +90,9 @@ spec:
       headers:
         request:  
           add:  
-            x-guacd-conn-type: "rdp"
+            x-guacd-conn-type: "{{$protocol}}"
             x-guacd-setting-hostname: "{{.FullName}}-vm-controller"
-            x-guacd-setting-port: "3389"
+            x-guacd-setting-port: "{{$instancePort}}"
             x-guacd-setting-security: "any"
             x-guacd-setting-ignore-cert: "true"
             x-guacd-setting-enable-drive: "false"

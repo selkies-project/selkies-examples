@@ -33,7 +33,7 @@ jq --arg u "$USERNAME" --arg p "$(echo -n $PASSWORD | base64)" '.api = {"credent
 json-server --port 8080 --host 0.0.0.0 api.json &
 
 while true; do
-    echo "INFO: Starting IAP tunnel for RDP to instance"
-    ${GCLOUD} compute start-iap-tunnel ${INSTANCE_NAME?} 3389 --zone ${INSTANCE_ZONE?} --local-host-port=0.0.0.0:3389 || true
+    echo "INFO: Starting IAP tunnel on port ${INSTANCE_PORT?} to instance"
+    ${GCLOUD} compute start-iap-tunnel ${INSTANCE_NAME?} ${INSTANCE_PORT?} --zone ${INSTANCE_ZONE?} --local-host-port=0.0.0.0:${INSTANCE_PORT?} || true
     sleep 2
 done

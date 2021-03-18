@@ -87,7 +87,7 @@ spec:
               protocol: TCP
           resources:
             requests:
-              cpu: 100m
+              cpu: 200m
 
         ###
         # Guacamole lite container
@@ -103,7 +103,7 @@ spec:
               value: "{{.CookieValue | sha256sum | trunc 32}}"
           resources:
             requests:
-              cpu: 500m
+              cpu: 50m
           ports:
             - name: guac-lite
               containerPort: 8080
@@ -131,9 +131,6 @@ spec:
               value: "{{.CookieValue | sha256sum | trunc 32}}"
             - name: WSS_HOSTPATH
               value: "wss://{{.SysParams.Domain}}/{{.App}}/ws/"
-          resources:
-            requests:
-              cpu: 500m
           ports:
             - name: token
               containerPort: 8081
@@ -157,9 +154,6 @@ spec:
           env:
             - name: GUACD_HOST
               value: "localhost"
-          resources:
-            requests:
-              cpu: 500m
           ports:
             - name: web
               containerPort: 80

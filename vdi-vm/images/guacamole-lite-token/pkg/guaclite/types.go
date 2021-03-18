@@ -34,19 +34,20 @@ type GuacdConnectionSpec struct {
 }
 
 type GuacdConnectionSettings struct {
-	Hostname        string `json:"hostname"`
-	Port            string `json:"port"`
-	Username        string `json:"username"`
-	Password        string `json:"password"`
-	Width           string `json:"width"`
-	Height          string `json:"height"`
-	Cursor          string `json:"cursor"`
-	Security        string `json:"security"`
-	IgnoreCert      bool   `json:"ignore-cert"`
-	EnableDrive     bool   `json:"enable-drive"`
-	CreateDrivePath bool   `json:"create-drive-path"`
-	EnableWallpaper bool   `json:"enable-wallpaper"`
-	ResizeMethod    string `json:"resize-method"`
+	Hostname            string `json:"hostname"`
+	Port                string `json:"port"`
+	Username            string `json:"username"`
+	Password            string `json:"password"`
+	Width               string `json:"width"`
+	Height              string `json:"height"`
+	Cursor              string `json:"cursor"`
+	Security            string `json:"security"`
+	IgnoreCert          bool   `json:"ignore-cert"`
+	EnableDrive         bool   `json:"enable-drive"`
+	CreateDrivePath     bool   `json:"create-drive-path"`
+	EnableWallpaper     bool   `json:"enable-wallpaper"`
+	ResizeMethod        string `json:"resize-method"`
+	EnableFontSmoothing bool   `json:"enable-font-smoothing"`
 }
 
 type guacdTokenData struct {

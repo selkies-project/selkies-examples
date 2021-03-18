@@ -15,6 +15,26 @@
 {{- $defaultProxyImage := printf "gcr.io/%s/kube-pod-broker-gce-proxy:latest" .ProjectID }}
 {{- $defaultWebRTCAppImage := printf "gcr.io/%s/webrtc-gpu-streaming-gst-webrtc-app:latest" .ProjectID }}
 
+{{- $enableVNC := false }}
+{{- $instancePort := 3389 }}
+{{- $protocol := "rdp" }}
+
+{{- if .UserParams.enableVNC }}
+  {{- if eq .UserParams.enableVNC "true" }}
+    {{- $enableVNC = true }}
+  {{- end}}
+{{- end}}
+{{- if .AppParams.enableVNC }}
+  {{- if eq .AppParams.enableVNC "true" }}
+    {{- $enableVNC = true }}
+  {{- end}}
+{{- end}}
+
+{{- if $enableVNC }}
+  {{- $protocol = "vnc" }}
+  {{- $instancePort = 5900 }}
+{{- end}}
+
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -96,6 +116,9 @@ spec:
     - port: 3389
       name: rdp
       targetPort: 3389
+    - port: 5900
+      name: vnc
+      targetPort: 5900
     # gotty tunnel for linux
     - port: 9000
       name: gotty
@@ -162,6 +185,8 @@ spec:
               value: "{{.AppParams.instanceZone}}"
             - name: INSTANCE_TEMPLATE
               value: "{{.AppParams.instanceTemplate}}"
+            - name: INSTANCE_PORT
+              value: {{$instancePort | quote}}
             - name: BROKER_DOMAIN
               value: "{{.SysParams.Domain}}"
             - name: BROKER_COOKIE
@@ -193,12 +218,12 @@ spec:
             - name: rdp
               containerPort: 3389
               protocol: TCP
+            - name: vnc
+              containerPort: 5900
+              protocol: TCP
             - name: gotty
               containerPort: 9000
               protocol: TCP
-          resources:
-            requests:
-              cpu: 100m
           livenessProbe:
             exec:
               command:

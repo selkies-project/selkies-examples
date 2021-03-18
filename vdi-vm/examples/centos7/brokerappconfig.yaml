@@ -56,7 +56,11 @@ spec:
       oldRepo: gcr.io/cloud-solutions-images/webrtc-gpu-streaming-gst-web
       newRepo: gcr.io/${PROJECT_ID}/webrtc-gpu-streaming-gst-web
       newTag: latest
-  userParams: []
+  userParams:
+    - name: enableVNC
+      displayName: "Use VNC"
+      type: bool
+      default: "false"
   shutdownHooks:
     - selector: "app=vm-controller"
       container: "controller"

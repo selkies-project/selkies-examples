@@ -57,6 +57,7 @@ class GuacamoleLiteToken {
                     'x-guacd-setting-password': btoa(password),
                     'x-guacd-setting-color-depth': "32",
                     'x-guacd-setting-disable-audio': "false",
+                    'x-guacd-setting-enable-font-smoothing': "true",
                 }
             })
                 .then((result) => {

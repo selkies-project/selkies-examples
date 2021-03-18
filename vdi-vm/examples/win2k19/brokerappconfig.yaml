@@ -64,6 +64,11 @@ spec:
       default: windows
     - name: idleShutdownTimeout
       default: "600" # seconds
+  userParams:
+    - name: enableVNC
+      displayName: "Use VNC"
+      type: bool
+      default: "false"
   shutdownHooks:
     - selector: "app=vm-controller"
       container: "controller"
