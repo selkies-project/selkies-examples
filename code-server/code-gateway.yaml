@@ -16,6 +16,7 @@ apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
   name: code-gateway
+  namespace: pod-broker-system
 spec:
   selector:
     # updated with patch to match target ingressgateway
