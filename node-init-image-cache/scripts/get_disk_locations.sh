@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+EXCLUDE_REGIONS="$1"
+
 # Get all cluster name, regions and node pool urls (for zones)
 gcloud container clusters list -q --format='csv[no-heading](name,zone,instanceGroupUrls)' > clusters.txt
 
@@ -24,6 +26,9 @@ rm -f cluster_region_zone_tmp.txt
 while IFS= read -r line; do
     IFS=',' read -ra CLUSTER <<< "$line"
     IFS=';' read -ra URLS <<< "${CLUSTER[2]}"
+    if [[ "${EXCLUDE_REGIONS}" != "none" && "${EXCLUDE_REGIONS}" =~ "${CLUSTER[1]}" ]] ; then
+        continue
+    fi
     for url in ${URLS[*]}; do
         zone=$(echo "$url" | cut -d'/' -f9)
         if [[ -z "$ZONES" ]]; then ZONES=$zone; else ZONES=$ZONES:$zone; fi
@@ -39,4 +44,3 @@ rm -f cluster_region_zone_tmp.txt
 
 # Save list of zones to file
 echo $ZONES | tr ':' '\n' | uniq > zones.txt
-

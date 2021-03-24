@@ -15,6 +15,9 @@
 timeout: 7200s
 substitutions:
   _PROVISION_MACHINE_TYPE: e2-standard-8
+  _IMAGE_BUILD_REGION: "us-central1"
+  _IMAGE_BUILD_ZONE: "us-central1-a"
+  _EXCLUDE_REGIONS: "none"
   _DISK_SIZE_GB: "256"
   _PULL_ALL_GCR: "true"
 tags:
@@ -27,14 +30,18 @@ steps:
     id: fetch-project-clusters
     entrypoint: bash
     args:
-      - -exc
+      - -ec
       - |
         # Fetch cluster and zone info using script.
         # output writes clusters.txt, zones.txt, and cluster_region_zone.txt.
-        ./scripts/get_disk_locations.sh
-        cat clusters.txt
-        cat zones.txt
-        cat cluster_region_zone.txt
+        ./scripts/get_disk_locations.sh "${_EXCLUDE_REGIONS}"
+
+        echo "Clusters:"
+        cat clusters.txt | sed 's/^/  /g'
+        echo "Zones:"
+        cat zones.txt | sed 's/^/  /g'
+        echo "Cluster region<>zone mapping:"
+        cat cluster_region_zone.txt | sed 's/^/  /g'
   ###
   # Create image cache for project
   ###
@@ -44,16 +51,13 @@ steps:
     args:
       - -exc
       - |
-        # Select first region in broker VPC to run provisioner in.
-        IFS=',' read -ra ZONE_REGION <<< $(head -1 cluster_region_zone.txt)
-
         # Use the last image as a cached starting point if it's present.
         USE_LAST_IMAGE="true"
         CURR_IMAGE=$(gcloud compute images list -q --project ${PROJECT_ID} --filter='name~selkies-image-cache' --limit=1 --format='value(name)')
         if [[ -z "$${CURR_IMAGE}" ]]; then USE_LAST_IMAGE="false"; fi
 
         cd build/selkies-image-cache
-        gcloud builds submit --substitutions=_PROVISION_REGION=$${ZONE_REGION[1]},_PROVISION_ZONE=$${ZONE_REGION[0]},_DISK_SIZE_GB=${_DISK_SIZE_GB},_USE_LAST_IMAGE="$${USE_LAST_IMAGE},_PULL_ALL_GCR=${_PULL_ALL_GCR},_PROVISION_MACHINE_TYPE=${_PROVISION_MACHINE_TYPE}"
+        gcloud builds submit --substitutions=_PROVISION_MACHINE_TYPE=${_PROVISION_MACHINE_TYPE},_PROVISION_REGION=${_IMAGE_BUILD_REGION},_PROVISION_ZONE=${_IMAGE_BUILD_ZONE},_DISK_SIZE_GB=${_DISK_SIZE_GB},_USE_LAST_IMAGE=$${USE_LAST_IMAGE},_PULL_ALL_GCR=${_PULL_ALL_GCR}
   ###
   # Create cache disk for each zone.
   ###
