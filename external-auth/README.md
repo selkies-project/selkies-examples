@@ -62,3 +62,12 @@ kubectl -n opa create configmap selkies-opa-users \
     a. Open the (IAP console page)[] and select the `istio-ingressgateway` resource.
     b. On the side info panel, click __START__ next to the "Use external identities for authorization" section.
     c. If prompted, enable the __Identity Toolkit API__.
+
+## A note on using Google Identities
+
+Some google identities have a dot `.` in them like this: `john.smith@gmail.com` but the address that is in the reqeust header is `johnsmith@gmail.com`.
+When adding users to the OPA configmap, or the brokerappconfig list, use a pattern like the one below to handle either case:
+
+```
+john.?smith@gmail.com
+```
