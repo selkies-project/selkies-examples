@@ -63,11 +63,48 @@ kubectl -n opa create configmap selkies-opa-users \
     b. On the side info panel, click __START__ next to the "Use external identities for authorization" section.
     c. If prompted, enable the __Identity Toolkit API__.
 
-## A note on using Google Identities
+## Programmatic Access
 
-Some google identities have a dot `.` in them like this: `john.smith@gmail.com` but the address that is in the reqeust header is `johnsmith@gmail.com`.
-When adding users to the OPA configmap, or the brokerappconfig list, use a pattern like the one below to handle either case:
+### Google Provider
+
+1. Save your GCIP API key to a variable:
 
 ```
-john.?smith@gmail.com
+export API_KEY=YourApiKey
 ```
+> NOTE: This is obtained from the Identity Platform Cloud Console page under __Application Setup Details__
+
+2. Save the OAuth Client ID of the GCIP sign-in page to a variable:
+
+```
+AUDIENCE=YourGcipClientID
+```
+> NOTE: This is obtained from the Credentials Cloud Console page for the OAuth client named __Web client (auto created by Google Service)__
+
+3. If running from a GCP instance or GKE container with Workload Identity, obtain an ID token from the metadata server:
+
+```
+ID_TOKEN=$(curl -s -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=${AUDIENCE?}")
+```
+
+4. Obtain a GCIP ID token from the Identity Platform API:
+
+```
+GCIP_TOKEN=$(curl -s "https://identitytoolkit.googleapis.com/v1/accounts:signInWithIdp?key=${API_KEY?}" \
+    -H 'Content-Type: application/json' \
+    --data-binary '{
+        "postBody": "id_token='${ID_TOKEN?}'&providerId=google.com",
+        "requestUri": "https://broker.endpoints.${PROJECT_ID?}.cloud.goog",
+        "returnIdpCredential": true,
+        "returnSecureToken": true
+    }' | jq -r .idToken)
+```
+> NOTE: The GCIP ID token is returned in the `idToken` field of the JSON response.
+> NOTE: you may have to update the `requestUri` in the request to match your broker endpoint.
+
+5. Make a proxied request to broker using GCIP token:
+
+```
+curl -s -H "Authorization: Bearer ${GCIP_TOKEN}" -H "x-broker-proxy-user: user@example.com" "https://broker.endpoints.${PROJECT_ID?}.cloud.goog/broker/"
+```
+> NOTE: change the value of `x-broker-proxy-user` to the user email you want to make the request as.

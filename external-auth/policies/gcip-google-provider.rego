@@ -34,6 +34,9 @@ import input.attributes.request.http as http_request
 #       }
 import data.opa["selkies-opa-users"]["users.json"].allowed_users as selkies_users
 
+# ConfigMap with authorized list of admins who can make proxied user requests.
+import data.opa["selkies-opa-admins"]["users.json"].allowed_users as selkies_admins
+
 # Extract the JWT token from the request
 default token = {"payload": {}}
 token = {"payload": payload} {
@@ -55,28 +58,58 @@ allowed = true {
   some i; regex.match(selkies_users[i], provider_email(provider.name, token.payload))
 }
 
-# Allow deployment type watchdog requests
+# Allow requests from pod to get session info
 allowed = true {
-  regex.match("/reservation-broker/shutdown/", http_request.path)
-  provider_email("cookie", token.payload) == "watchdog@localhost"
+  regex.match("/reservation-broker/session/", http_request.path)
+  provider_email("cookie", token.payload) == "session@localhost"
 }
 
-# Default deny
+# Allow requests to the broker from admins
+allowed = true {
+  some i; regex.match(selkies_admins[i], provider_email(provider.name, token.payload))
+}
+
+default admin_proxy_request = false
+admin_proxy_request = true {
+  count(http_request.headers["x-broker-proxy-user"]) > 0
+  some i; regex.match(selkies_admins[i], provider_email(provider.name, token.payload))
+}
+
+# Default deny access
 default allowed = false
+default allow = {"allowed": false}
 
 ###
+# Standard user response.
 # Add headers to response.
 #   x-goog-authenticated-user-email: compatible header with non-migrated pod-broker configurations.
 #   x-broker-user: Broker will set the Template data .User property to this value.
 #   x-broker-id-tok: Broker uses this value generate a unique id for user. This is also used for VirtualService routing.
 ###
 allow = response {
+  admin_proxy_request == false
   response = {
     "allowed": allowed,
     "headers": {
       "x-goog-authenticated-user-email": sprintf("accounts.google.com:%s", [provider_email(provider.name, token.payload)]),
-		  "x-broker-user": split(provider_email(provider.name, token.payload), "@")[0],
-		  "x-broker-id-tok": sprintf("accounts.google.com:%s", [provider_email(provider.name, token.payload)])
-	  }
+      "x-broker-user": split(provider_email(provider.name, token.payload), "@")[0],
+      "x-broker-id-tok": sprintf("accounts.google.com:%s", [provider_email(provider.name, token.payload)])
+    }
+  }
+}
+
+###
+# Special response for admin proxy user requests.
+###
+allow = response {
+  admin_proxy_request == true
+  response = {
+    "allowed": allowed,
+    "headers": {
+      "x-goog-authenticated-user-email": sprintf("accounts.google.com:%s", [http_request.headers["x-broker-proxy-user"]]),
+      "x-broker-user": split(http_request.headers["x-broker-proxy-user"], "@")[0],
+      "x-broker-id-tok": sprintf("accounts.google.com:%s", [http_request.headers["x-broker-proxy-user"]]),
+      "x-broker-proxy-user-requestor": provider_email(provider.name, token.payload)
+    }
   }
 }
