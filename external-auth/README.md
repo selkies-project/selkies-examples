@@ -108,3 +108,13 @@ GCIP_TOKEN=$(curl -s "https://identitytoolkit.googleapis.com/v1/accounts:signInW
 curl -s -H "Authorization: Bearer ${GCIP_TOKEN}" -H "x-broker-proxy-user: user@example.com" "https://broker.endpoints.${PROJECT_ID?}.cloud.goog/broker/"
 ```
 > NOTE: change the value of `x-broker-proxy-user` to the user email you want to make the request as.
+
+
+## A note on using Google Identities
+
+Some google identities have a dot `.` in them like this: `john.smith@gmail.com` but the address that is in the reqeust header is `johnsmith@gmail.com`.
+When adding users to the OPA configmap, or the brokerappconfig list, use a pattern like the one below to handle either case:
+
+```
+john.?smith@gmail.com
+```
