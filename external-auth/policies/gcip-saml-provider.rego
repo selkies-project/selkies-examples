@@ -49,6 +49,12 @@ provider = {"name": name} {
   name := token.payload.gcip.firebase.sign_in_provider
 }
 
+provider_email("cookie", p) = email {
+  values := split(http_request.headers["cookie"], ";")
+  some i; re_match("^broker_.*?=.*?#.*$", values[i])
+  email := split(split(values[i], "=")[1], "#")[0]
+}
+
 provider_email("saml.saml-provider", p) = email {
   email := p.gcip.firebase.sign_in_attributes.email
 }
