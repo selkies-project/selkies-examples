@@ -1,4 +1,4 @@
-# Copyright 2020 Google LLC
+# Copyright 2021 The Selkies Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,6 +15,15 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-bases:
-  - kube-system/
-  - pod-broker-system/
+namespace: pod-broker-system
+
+configMapGenerator:
+  ###
+  # Contents of Cloudbuild files in gzipped tarball
+  ###
+  - name: image-cache-update-cloudbuild
+    files:
+      - cloudbuild.tgz
+
+resources:
+  - update-cache-cronjob.yaml

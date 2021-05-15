@@ -15,6 +15,19 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-bases:
-  - kube-system/
-  - pod-broker-system/
+namespace: kube-system
+
+configMapGenerator:
+  ###
+  # Script used to inject docker images
+  ###
+  - name: image-loader
+    files:
+      - inject-images.sh
+
+namePrefix: ${ZONE}-
+
+resources:
+  - pod-broker-image-cache-pv.yaml
+  - pod-broker-image-loader-gpu-cos-ds.yaml
+  - pod-broker-image-loader-tier1-ds.yaml

@@ -15,10 +15,9 @@
 kind: CronJob
 apiVersion: batch/v1beta1
 metadata:
-  name: image-puller-subscription-reaper
-  namespace: pod-broker-system
+  name: update-image-cache
   labels:
-    k8s-app: image-puller-subscription-reaper
+    k8s-app: update-image-cache
 spec:
   # UTC time,
   schedule: "0 8 * * *"
@@ -32,17 +31,35 @@ spec:
         spec:
           serviceAccount: pod-broker
           restartPolicy: OnFailure
+
+          volumes:
+            ###
+            # Cloudbuild contents
+            ###
+            - name: cloudbuild
+              configMap:
+                name: image-cache-update-cloudbuild
           containers:
             ###
             # per-project node cache updater job.
             ###
-            - image: gcr.io/cloud-solutions-images/kube-pod-broker-controller:latest
-              name: subscription-reaper
+            - image: gcr.io/${PROJECT_ID}/kube-pod-broker-controller:latest
+              name: image-cache-update
               command: ["/bin/bash"]
               args:
                 - "-ec"
                 - |
-                  if gcloud builds list --ongoing --filter='tags[]~selkies-image-cache-image-project'
+                  CURR_BUILD=$(gcloud -q builds list --ongoing --filter='tags[]~selkies-image-cache-image-project' 2>/dev/null || true)
+                  if [[ -n "$${CURR_BUILD}" ]]; then
+                    echo "WARN: Existing update cache update build found, exiting."
+                    exit 0
+                  fi
+                  cd /tmp && tar zxf /var/run/cloudbuild/cloudbuild.tgz
+                  cat cloudbuild.yaml
+                  gcloud -q builds submit --substitutions=_INSTALL_CRONJOB=false
+              volumeMounts:
+                - name: cloudbuild
+                  mountPath: /var/run/cloudbuild
               resources:
                 requests:
                   cpu: 10m

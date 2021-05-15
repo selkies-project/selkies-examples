@@ -1,3 +1,7 @@
 NOTES.md
 wip/
 scripts/*.txt
+cluster_region_zone.txt
+clusters.txt
+zones.txt
+cache-update-cronjob/*.tgz

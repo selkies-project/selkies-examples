@@ -4,10 +4,10 @@ alias kubectl=/builder/kubectl.bash
 PD_NAME=$(cat pd_name)
 PD_TS=$(cat pd_ts)
 
-items=$(kubectl get pods -n kube-system -l app=pod-broker-image-loader -o jsonpath='{range .items[*]}{@.metadata.name}{","}{@.metadata.labels.pd-name}{","}{@.spec.nodeName}{"\n"}{end}')
+items=$(kubectl get pods -n kube-system -l app=pod-broker-image-loader -o jsonpath='{range .items[*]}{@.metadata.ownerReferences[0].name}{","}{@.metadata.labels.pd-name}{","}{@.spec.nodeName}{"\n"}{end}')
 for pod in ${items}; do
   IFS=',' read -ra pod_toks <<< "${pod}"
-  ds=${pod_toks[0]%-*}
+  ds=${pod_toks[0]}
   pd=${pod_toks[1]}
   node=${pod_toks[2]}
   if [[ ${pd} != ${PD_NAME} ]]; then
@@ -39,6 +39,9 @@ for pv in ${all_pvs[@]}; do
     kubectl delete pv,pvc ${pv} -n kube-system || true
   fi
 done
+
+# Remove old reaper cronjob in the kube-system namespace
+kubectl delete cronjob -n kube-system -l k8s-app=image-puller-subscription-reaper 2>/dev/null || true
 
 sed -i -e 's/${ZONE}/'${DISK_ZONE}'/g' kustomization.yaml
 
