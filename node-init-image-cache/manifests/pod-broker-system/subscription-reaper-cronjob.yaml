@@ -43,9 +43,11 @@ spec:
                 - |
                   SUBSCRIPTIONS=$(gcloud pubsub subscriptions list --format='value(name)')
                   NODES=$(kubectl get node -o jsonpath='{..metadata.name}')
+                  ZONE=${ZONE}
+                  REGION=${ZONE%-*}
                   
-                  for sub in $SUBSCRIPTIONS; do
-                    if [[ "$sub" =~ pod-broker-image-puller ]]; then
+                  for sub in $SUBSCRIPTIONS; do  
+                    if [[ "$sub" =~ pod-broker-image-puller && "$sub" =~ ${REGION} ]]; then
                       submatch=$(echo $sub | cut -d'/' -f4 | sed 's/pod-broker-image-puller-//g')
                       if [[ ! "$NODES" =~ $submatch ]]; then
                         echo "deleting stale node subscription: $sub"
@@ -53,7 +55,7 @@ spec:
                       fi
                     fi
                     
-                    if [[ "$sub" =~ pod-broker-image-finder ]]; then
+                    if [[ "$sub" =~ pod-broker-image-finder && "$sub" =~ ${REGION} ]]; then
                       submatch=$(echo $sub | cut -d'/' -f4 | sed 's/pod-broker-image-finder-//g')
                       if [[ ! "$NODES" =~ $submatch ]]; then
                         echo "deleting stale node subscription: $sub"
