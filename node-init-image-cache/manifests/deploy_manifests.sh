@@ -43,6 +43,9 @@ done
 # Remove old reaper cronjob in the kube-system namespace
 kubectl delete cronjob -n kube-system -l k8s-app=image-puller-subscription-reaper 2>/dev/null || true
 
+# Remove old reaper cronjob in the pod-broker-system namespace that should have been in the selkies core repo.
+kubectl delete cronjob -n pod-broker-system ${DISK_ZONE}-image-puller-subscription-reaper 2>/dev/null || true
+
 sed -i -e 's/${ZONE}/'${DISK_ZONE}'/g' kustomization.yaml
 
 kubectl.1.17 kustomize | \

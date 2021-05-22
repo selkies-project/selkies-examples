@@ -17,4 +17,3 @@ kind: Kustomization
 
 bases:
   - kube-system/
-  - pod-broker-system/
