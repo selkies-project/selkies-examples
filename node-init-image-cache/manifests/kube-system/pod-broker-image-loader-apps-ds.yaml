@@ -15,7 +15,7 @@
 kind: DaemonSet
 apiVersion: apps/v1
 metadata:
-  name: pod-broker-image-loader-tier1-${TS}
+  name: pod-broker-image-loader-apps-${TS}
   labels:
     app: pod-broker-image-loader
     pd-name: ${PD_NAME}
@@ -51,6 +51,8 @@ spec:
                     values:
                       - tier1
                       - tier1-ubuntu
+                      - tier2
+                      - tier2-ubuntu
                   - key: failure-domain.beta.kubernetes.io/zone
                     operator: In
                     values: ["${ZONE}"]

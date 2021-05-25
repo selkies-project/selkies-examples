@@ -30,4 +30,4 @@ namePrefix: ${ZONE}-
 resources:
   - pod-broker-image-cache-pv.yaml
   - pod-broker-image-loader-gpu-cos-ds.yaml
-  - pod-broker-image-loader-tier1-ds.yaml
+  - pod-broker-image-loader-apps-ds.yaml
