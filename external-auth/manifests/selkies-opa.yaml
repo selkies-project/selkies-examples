@@ -57,6 +57,7 @@ spec:
               google_grpc:
                 target_uri: opa.opa.svc.cluster.local:9191
                 stat_prefix: "ext_authz"
+              timeout: 5s
 ---
 ###
 # Configuration for opa-istio container to enable OPA envoy plugin.
@@ -154,8 +155,7 @@ spec:
           defaultMode: 420
       containers:
       - name: opa
-        #image: openpolicyagent/opa
-        image: openpolicyagent/opa:0.27.1-istio
+        image: openpolicyagent/opa:0.28.0-istio
         args:
         - "run"
         - "--server"
