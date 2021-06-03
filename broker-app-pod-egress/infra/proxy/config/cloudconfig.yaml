@@ -17,7 +17,7 @@ write_files:
       [Service]
       Environment="HOME=/home/cloudservice"
       ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
-      ExecStart=/usr/bin/docker run --name mycloudservice --net=host --volume /var/run/docker/squid/cache:/var/spool/squid --volume /var/log/squid:/var/log/squid gcr.io/${PROJECT}/vdi-squid:latest
+      ExecStart=/usr/bin/docker run --restart=always --name mycloudservice --net=host --volume /var/run/docker/squid/cache:/var/spool/squid --volume /var/log/squid:/var/log/squid gcr.io/${PROJECT}/vdi-squid:latest
       ExecStop=/usr/bin/docker stop mycloudservice
       ExecStopPost=/usr/bin/docker rm mycloudservice
 
