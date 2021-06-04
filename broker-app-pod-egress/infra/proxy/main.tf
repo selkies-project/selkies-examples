@@ -16,7 +16,7 @@
 
 data "google_compute_subnetwork" "broker" {
   project = var.project_id
-  name    = "broker-${var.region}"
+  name    = var.subnetwork_name == "" ? "broker-${var.region}" : var.subnetwork_name
   region  = var.region
 }
 
@@ -102,7 +102,7 @@ module "mig" {
       port = 3129
     }
   ]
-  health_check =  {
+  health_check = {
     type                = "tcp"
     initial_delay_sec   = 60
     check_interval_sec  = 30

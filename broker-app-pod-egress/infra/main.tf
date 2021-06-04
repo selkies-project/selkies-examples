@@ -16,7 +16,7 @@
 
 data "google_compute_network" "broker" {
   project = var.project_id
-  name    = var.name
+  name    = var.network_name
 }
 
 module "service_accounts" {

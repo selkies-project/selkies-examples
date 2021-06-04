@@ -22,6 +22,11 @@ variable "name" {
   default = "broker"
 }
 
+variable "subnetwork_name" {
+  description = "name of subnetwork to deploy proxy to, if not set, default will be broker-REGION"
+  default     = ""
+}
+
 variable "min_replicas" {
   default = 1
 }

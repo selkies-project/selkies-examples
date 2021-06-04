@@ -18,3 +18,6 @@ variable "project_id" {}
 variable "name" {
   default = "broker"
 }
+variable "network_name" {
+  default = "broker"
+}
