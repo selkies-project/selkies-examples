@@ -28,7 +28,7 @@ variable "subnetwork_name" {
 }
 
 variable "min_replicas" {
-  default = 1
+  default = 2
 }
 
 variable "max_replicas" {
