@@ -22,10 +22,30 @@ variable "name" {
   default = "broker"
 }
 
-variable "instance_count" {
+variable "min_replicas" {
   default = 1
 }
 
+variable "max_replicas" {
+  default = 5
+}
+
 variable "machine_type" {
-  default = "n1-standard-1"
+  default = "n1-standard-2"
+}
+
+variable "access_configs" {
+  description = "access config blocks for the instance, set to [] to omit assinging an external IP."
+  default = [{
+    nat_ip       = ""
+    network_tier = "PREMIUM"
+  }]
+}
+
+variable "autoscaling_cpu" {
+  description = "Autoscaling, cpu utilization policy block as single element array. https://www.terraform.io/docs/providers/google/r/compute_autoscaler.html#cpu_utilization"
+  type        = list(map(number))
+  default = [{
+    target = 0.5
+  }]
 }

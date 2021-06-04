@@ -60,9 +60,13 @@ resource "google_compute_instance_template" "proxy" {
   network_interface {
     network    = data.google_compute_subnetwork.broker.network
     subnetwork = data.google_compute_subnetwork.broker.name
-    access_config {
-      nat_ip       = ""
-      network_tier = "PREMIUM"
+
+    dynamic "access_config" {
+      for_each = var.access_configs
+      content {
+        nat_ip       = access_config.value["nat_ip"]
+        network_tier = access_config.value["network_tier"]
+      }
     }
   }
 
@@ -78,13 +82,16 @@ resource "google_compute_instance_template" "proxy" {
 }
 
 module "mig" {
-  source            = "terraform-google-modules/vm/google//modules/mig"
-  version           = "~> 2.1.0"
-  project_id        = var.project_id
-  instance_template = google_compute_instance_template.proxy.self_link
-  region            = var.region
-  hostname          = local.proxy_name
-  target_size       = var.instance_count
+  source              = "terraform-google-modules/vm/google//modules/mig"
+  version             = "~> 2.1.0"
+  project_id          = var.project_id
+  instance_template   = google_compute_instance_template.proxy.self_link
+  region              = var.region
+  hostname            = local.proxy_name
+  autoscaling_enabled = true
+  min_replicas        = var.min_replicas
+  max_replicas        = var.max_replicas
+  autoscaling_cpu     = var.autoscaling_cpu
   named_ports = [
     {
       name = "http",
@@ -95,6 +102,20 @@ module "mig" {
       port = 3129
     }
   ]
+  health_check =  {
+    type                = "tcp"
+    initial_delay_sec   = 60
+    check_interval_sec  = 30
+    healthy_threshold   = 1
+    timeout_sec         = 10
+    unhealthy_threshold = 5
+    response            = ""
+    proxy_header        = "NONE"
+    port                = 3128
+    request             = ""
+    request_path        = "/"
+    host                = ""
+  }
   network    = data.google_compute_subnetwork.broker.network
   subnetwork = data.google_compute_subnetwork.broker.self_link
 }

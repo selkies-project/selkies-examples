@@ -20,6 +20,8 @@ write_files:
       ExecStart=/usr/bin/docker run --restart=always --name mycloudservice --net=host --volume /var/run/docker/squid/cache:/var/spool/squid --volume /var/log/squid:/var/log/squid gcr.io/${PROJECT}/vdi-squid:latest
       ExecStop=/usr/bin/docker stop mycloudservice
       ExecStopPost=/usr/bin/docker rm mycloudservice
+      Restart=always
+      RestartSec=5s
 
 bootcmd:
   # add private google access resolving for gcr.io. and storage.googleapis.com so that squid container can be pulled on boot.

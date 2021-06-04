@@ -33,6 +33,14 @@ export TF_IN_AUTOMATION=1
 # Set default project for google provider.
 export GOOGLE_PROJECT=${TF_VAR_project_id?}
 
+# Fetch any Secret Manager secrets named broker-proxy-tfvars* and same them to .auto.tfvars files.
+for secret in $(gcloud -q secrets list --filter=name~broker-proxy-${TF_VAR_region?}-tfvars --format="value(name)"); do
+    latest=$(gcloud secrets versions list ${secret} --sort-by=created --format='value(name)' --limit=1)
+    dest="${secret/broker-proxy-${TF_VAR_region?}-tfvars/}.auto.tfvars"
+    log_cyan "Creating ${dest} from secret: ${secret}"
+    gcloud -q secrets versions access ${latest} --secret ${secret} > ${dest}
+done
+
 # Initialize backend and select workspace
 terraform init -upgrade=true -input=false \
     -backend-config="bucket=${TF_VAR_project_id?}-${TF_VAR_name?}-tf-state" \
