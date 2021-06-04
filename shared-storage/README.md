@@ -27,16 +27,23 @@ Cons:
 
 ### Cloud Filestore tutorial
 
+1. Set you target ZONE and region:
+
+```
+export ZONE=us-west1-a
+export REGION=us-west1
+```
+
 1. Create cloud filestore instance:
 
 ```bash
-(cd infra && gcloud builds submit)
+(cd infra && gcloud builds submit --substitutions=_ZONE=${ZONE?})
 ```
 
 2. Deploy the manifests:
 
 ```bash
-(cd manifests && gcloud builds submit)
+(cd manifests && gcloud builds submit --substitutions=_REGION=${REGION?})
 ```
 
 3. Get the IP address of the Filestore instance:
@@ -183,6 +190,14 @@ appParams:
 > NOTE: Replace `ROOK_IP` with the IP of the rook pod obtained earlier.
 
 6. Launch the app and verify that the /mnt/shared directory is 10gig in size and that you can write to it.
+
+## NFS Admin Pod
+
+Use the script below to connect to your clusters NFS server and interact with the NFS filesystem directly:
+
+```bash
+./scripts/nfs_admin.sh
+```
 
 ## Shared read-only persistent disk
 
