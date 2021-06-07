@@ -1,0 +1,76 @@
+# Copyright 2021 The Selkies Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+timeout: 7200s
+substitutions:
+  _PROVISION_MACHINE_TYPE: e2-standard-8
+  _IMAGE_BUILD_REGION: "us-central1"
+  _IMAGE_BUILD_ZONE: "us-central1-a"
+  _EXCLUDE_REGIONS: "none"
+  _DISK_SIZE_GB: "256"
+  _PULL_ALL_GCR: "true"
+  _CRONJOB_REGION: "us-west1"
+tags:
+  - selkies-image-cache-image-project
+steps:
+  ###
+  # Evaluate clusters in project, obtain their region and zone.
+  ###
+  - name: gcr.io/cloud-builders/gcloud
+    id: fetch-project-clusters
+    entrypoint: bash
+    args:
+      - -ec
+      - |
+        # Fetch cluster and zone info using script.
+        # output writes clusters.txt, zones.txt, and cluster_region_zone.txt.
+        ./scripts/get_disk_locations.sh "${_EXCLUDE_REGIONS}"
+
+        echo "Clusters:"
+        cat clusters.txt | sed 's/^/  /g'
+        echo "Zones:"
+        cat zones.txt | sed 's/^/  /g'
+        echo "Cluster region<>zone mapping:"
+        cat cluster_region_zone.txt | sed 's/^/  /g'
+  ###
+  # Create cronjob to perform auto updates
+  ###
+  - name: gcr.io/cloud-builders/kubectl
+    id: install-cronjob
+    entrypoint: bash
+    args:
+      - -exc
+      - |
+        if [[ -z "$(grep "${_CRONJOB_REGION}" /workspace/zones.txt)" ]]; then
+          echo "ERROR: _CRONJOB_REGION region: '${_CRONJOB_REGION}' not found in project, cannot deploy cache update CronJob"
+          exit 1
+        fi
+        echo "Installing CronJob to cluster in region: ${_CRONJOB_REGION}"
+        tar zcvf cache-update-cronjob/cloudbuild.tgz build manifests scripts cloudbuild.yaml
+
+        CLUSTER=$(cat /workspace/clusters.txt | grep ${_CRONJOB_REGION})
+        IFS=',' read -ra cluster_toks <<< "$$CLUSTER"
+        export CLOUDSDK_CORE_PROJECT="${PROJECT_ID}"
+        export CLOUDSDK_COMPUTE_REGION="$${cluster_toks[1]}"
+        export CLOUDSDK_CONTAINER_CLUSTER="$${cluster_toks[0]}"
+
+        kubectl.1.17 kustomize cache-update-cronjob | \
+          sed -e 's/$${PROJECT_ID}/${PROJECT_ID}/g' \
+              -e 's/$${_PROVISION_MACHINE_TYPE}/${_PROVISION_MACHINE_TYPE}/g' \
+              -e 's/$${_IMAGE_BUILD_REGION}/${_IMAGE_BUILD_REGION}/g' \
+              -e 's/$${_IMAGE_BUILD_ZONE}/${_IMAGE_BUILD_ZONE}/g' \
+              -e 's/$${_EXCLUDE_REGIONS}/${_EXCLUDE_REGIONS}/g' \
+              -e 's/$${_DISK_SIZE_GB}/${_DISK_SIZE_GB}/g' \
+              -e 's/$${_PULL_ALL_GCR}/${_PULL_ALL_GCR}/g' | \
+          /builder/kubectl.bash apply -f -

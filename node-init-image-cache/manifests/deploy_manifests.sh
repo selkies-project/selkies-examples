@@ -35,7 +35,7 @@ done
 read -ra claimed_pvs <<< $(kubectl get pods -n kube-system -l app=pod-broker-image-loader -o jsonpath='{.items[*].spec.volumes[0].persistentVolumeClaim.claimName}')
 read -ra all_pvs <<< $(kubectl get pv -n kube-system -l app=image-cache -o jsonpath='{.items[*].metadata.name}')
 for pv in ${all_pvs[@]}; do
-  if [[ ! "${claimed_pvs[@]}" =~ "${pv}" && ${pv} != ${PD_NAME} ]]; then
+  if [[ -n "${claimed_pvs[@]}" && ! "${claimed_pvs[@]}" =~ "${pv}" && ${pv} != ${PD_NAME} ]]; then
     kubectl delete pv,pvc ${pv} -n kube-system || true
   fi
 done

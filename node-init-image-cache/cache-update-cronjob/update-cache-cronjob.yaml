@@ -21,12 +21,12 @@ metadata:
 spec:
   # UTC time,
   schedule: "0 8 * * *"
-  startingDeadlineSeconds: 3600
+  startingDeadlineSeconds: 7200
   concurrencyPolicy: Replace
-  successfulJobsHistoryLimit: 0
+  successfulJobsHistoryLimit: 1
   jobTemplate:
     spec:
-      activeDeadlineSeconds: 3600
+      activeDeadlineSeconds: 7200
       template:
         spec:
           serviceAccount: pod-broker
@@ -54,9 +54,9 @@ spec:
                     echo "WARN: Existing update cache update build found, exiting."
                     exit 0
                   fi
-                  cd /tmp && tar zxf /var/run/cloudbuild/cloudbuild.tgz
+                  cd /tmp && tar zxvf /var/run/cloudbuild/cloudbuild.tgz
                   cat cloudbuild.yaml
-                  gcloud -q builds submit --substitutions=_INSTALL_CRONJOB=false
+                  gcloud -q builds submit --config cloudbuild.yaml --substitutions=_PROVISION_MACHINE_TYPE=${_PROVISION_MACHINE_TYPE},_IMAGE_BUILD_REGION=${_IMAGE_BUILD_REGION},_IMAGE_BUILD_ZONE=${_IMAGE_BUILD_ZONE},_EXCLUDE_REGIONS=${_EXCLUDE_REGIONS},_DISK_SIZE_GB=${_DISK_SIZE_GB},_PULL_ALL_GCR=${_PULL_ALL_GCR} || true
               volumeMounts:
                 - name: cloudbuild
                   mountPath: /var/run/cloudbuild

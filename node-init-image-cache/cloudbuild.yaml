@@ -20,8 +20,6 @@ substitutions:
   _EXCLUDE_REGIONS: "none"
   _DISK_SIZE_GB: "256"
   _PULL_ALL_GCR: "true"
-  _INSTALL_CRONJOB: "false"
-  _CRONJOB_REGION: "us-west1"
 tags:
   - selkies-image-cache-image-project
 steps:
@@ -89,32 +87,3 @@ steps:
 
         cd manifests
         cat /workspace/build_args.txt | xargs -P4 -I {} gcloud builds submit --project=${PROJECT_ID} --substitutions={}
-  ###
-  # Create cronjob to perform auto updates
-  ###
-  - name: gcr.io/cloud-builders/kubectl
-    id: install-cronjob
-    entrypoint: bash
-    args:
-      - -exc
-      - |
-        if [[ "${_INSTALL_CRONJOB}" != "true" ]]; then
-          echo "Skipping cronjob install"
-          exit 0
-        fi
-        if [[ -z "$(grep "${_CRONJOB_REGION}" /workspace/zones.txt)" ]]; then
-          echo "ERROR: _CRONJOB_REGION region: '${_CRONJOB_REGION}' not found in project, cannot deploy cache update CronJob"
-          exit 1
-        fi
-        echo "Installing CronJob to cluster in region: ${_CRONJOB_REGION}"
-        tar zcvf cache-update-cronjob/cloudbuild.tgz build manifests scripts cloudbuild.yaml
-
-        CLUSTER=$(cat /workspace/clusters.txt | grep ${_CRONJOB_REGION})
-        IFS=',' read -ra cluster_toks <<< "$$CLUSTER"
-        export CLOUDSDK_CORE_PROJECT="${PROJECT_ID}"
-        export CLOUDSDK_COMPUTE_REGION="$${cluster_toks[1]}"
-        export CLOUDSDK_CONTAINER_CLUSTER="$${cluster_toks[0]}"
-
-        kubectl.1.17 kustomize cache-update-cronjob | \
-          sed -e 's/$${PROJECT_ID}/${PROJECT_ID}/g' | \
-          /builder/kubectl.bash apply -f -

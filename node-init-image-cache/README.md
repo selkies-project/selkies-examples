@@ -28,6 +28,7 @@ The DaemonSet does the following on host:
 
 - Accelerated node startup by skiping large image downloads.
 - Uses Packer to build GCE disk image with cached docker images.
+- Periodic execution with CronJob.
 
 ## Tutorials
 
@@ -45,78 +46,50 @@ If you have not installed the WebRTC stack, follow this Cloud Shell tutorial to 
 
 [![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/selkies-project/selkies-vdi&cloudshell_git_branch=master&&cloudshell_tutorial=tutorials/gke/00_Setup.md)
 
-## Configure your environment
+## Install as a CronJob
 
-1. Set the project, replace `YOUR_PROJECT` with your project ID:
-
-```bash
-export PROJECT_ID=YOUR_PROJECT
-```
+1. Set variables to install CronJob:
 
 ```bash
-gcloud config set project ${PROJECT_ID?}
+PROJECT_ID=YOUR_PROJECT
 ```
+> replace `YOUR_PROJECT` with your project ID.
 
-## Default cache build and deploy for all clusters in project
-
-1. Set the disk size in gigabytes of the cache disk:
-
+```bash
+CRONJOB_REGION=YOUR_CLUSTER_REGION
 ```
+> replace `YOUR_CLUSTER_REGION` with the region you want to install the cronjob to. There should only be one cluster per project with the CronJob.
+
+```bash
+IMAGE_BUILD_REGION=YOUR_BUILD_REGION
+IMAGE_BUILD_ZONE=YOUR_BUILD_ZONE
+```
+> replace `YOUR_BUILD_REGION` and `YOUR_BUILD_ZONE` with the region and zone you want Packer to run in. Your project VPC must have a subnet in this region.
+
+```bash
 DISK_SIZE_GB=256
 ```
+> Update this to match your estimated image usage.
 
-2. Build cache image, zonal disks and deploy daemonsets for all clusters in project.
-
-```bash
-gcloud builds submit --project=${PROJECT_ID?} --substitutions=_DISK_SIZE_GB=${DISK_SIZE_GB?}
-```
-
-## (optional per-zone deployment) Building the cache disk
-
-1. Set the zone and disk size in gigabytes to provision the disk in:
-
-```
-REGION=us-west1
-ZONE=us-west1-a
-DISK_SIZE_GB=256
-```
-
-2. Create the GCE disk image containing a cache of the core Selkies images using Cloud Build and Packer:
+3. Install the CronJob:
 
 ```bash
-(cd build/selkies-image-cache && gcloud builds submit --project=${PROJECT_ID?} --substitutions=_PROVISION_REGION=${REGION?},_PROVISION_ZONE=${ZONE?},_DISK_SIZE_GB=${DISK_SIZE_GB?},_USE_LAST_IMAGE="false")
+gcloud builds submit --config cloudbuild-install-cronjob.yaml \
+    --project ${PROJECT_ID?} \
+    --substitutions=_CRONJOB_REGION=${CRONJOB_REGION?},_IMAGE_BUILD_REGION=${IMAGE_BUILD_REGION?},_IMAGE_BUILD_ZONE=${IMAGE_BUILD_ZONE?},_DISK_SIZE_GB=${DISK_SIZE_GB?}
 ```
+> NOTE: the default schedule for the CronJob is to run every 8 hours.
 
-> NOTE: you can include other images by adding them to the file: `build/selkies-image-cache/scripts/image_list.txt`
+## Triggering the Build Manually
 
-> NOTE: This step pulls __all__ GCR images found in the project that have a `latest` tag and takes about 20 minutes to complete.
-
-3. Create persistent disk from image:
+After installing the CronJob, it can be triggered manually using the command below:
 
 ```bash
-(cd build/gce-pd && gcloud builds submit --project=${PROJECT_ID?} --substitutions=_DISK_ZONE=${ZONE?},_DISK_SIZE_GB=${DISK_SIZE_GB?})
+kubectl create job --from=cronjob/update-image-cache -n pod-broker-system manual
 ```
 
-## Installing the DaemonSet
+## Resetting the image cache
 
-1. Deploy the PersistentVolume, PersistentVolumeClaim and DaemonSet to the cluster:
+By default, the image cache will use the previous disk image to update the images.
 
-```bash
-(cd manifests && gcloud builds submit --project=${PROJECT_ID?} --substitutions=_REGION=${REGION?},_DISK_ZONE=${ZONE?})
-```
-
-> NOTE: this creates 2 DaemonSets, one for the gpu-cos node pool and other for the tier1 node pool. The gpu-cos DaemonSet uses the pre-installed `cos-nvidia-installer:fixed` image, which only exists on nodes with GPUs attached.
-
-## Updating image cache
-
-With this approach for image caching, updating cached images can be more difficult.
-
-WORK IN PROGRESS - The suggested approach for updating a cached image is as follows:
-
-1. Build and push the updated image to GCR.
-2. Re-run the `build/selkies-image-cache` Cloud Build step to create a new compute image.
-3. Re-run the `build/gce-pd` Cloud Build step to create a new compute disk from the image.
-4. Shutdown all launched apps that are currently using the images.
-5. Delete the old DaemonSet (postfixed by timestamp), this way a new node doesn't try to run both DaemonSets.
-6. Re-run the `manifests/` Cloud Build step to deploy a new DaemonSet with the new timestamp postfix.
-7. Re-launch apps once the new DaemonSet has run to completion.
+To completely rebuild the image cache from scratch, delete all of the Compute Images prefixed with: `selkies-image-cache-` then re-run the CronJob.
