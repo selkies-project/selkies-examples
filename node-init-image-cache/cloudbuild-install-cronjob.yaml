@@ -21,6 +21,7 @@ substitutions:
   _DISK_SIZE_GB: "256"
   _PULL_ALL_GCR: "true"
   _CRONJOB_REGION: "us-west1"
+  _IMAGE_BUILD_SCHEDULE: "0 8 * * *"
 tags:
   - selkies-image-cache-image-project
 steps:
@@ -72,5 +73,6 @@ steps:
               -e 's/$${_IMAGE_BUILD_ZONE}/${_IMAGE_BUILD_ZONE}/g' \
               -e 's/$${_EXCLUDE_REGIONS}/${_EXCLUDE_REGIONS}/g' \
               -e 's/$${_DISK_SIZE_GB}/${_DISK_SIZE_GB}/g' \
+              -e 's/$${_IMAGE_BUILD_SCHEDULE}/${_IMAGE_BUILD_SCHEDULE}/g' \
               -e 's/$${_PULL_ALL_GCR}/${_PULL_ALL_GCR}/g' | \
           /builder/kubectl.bash apply -f -
