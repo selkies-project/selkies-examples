@@ -20,7 +20,7 @@ metadata:
     k8s-app: update-image-cache
 spec:
   # UTC time,
-  schedule: "0 8 * * *"
+  schedule: ${_IMAGE_BUILD_SCHEDULE}
   startingDeadlineSeconds: 7200
   concurrencyPolicy: Replace
   successfulJobsHistoryLimit: 1
