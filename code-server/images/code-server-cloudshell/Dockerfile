@@ -40,7 +40,7 @@ RUN curl -o ffmpeg-xpra.deb -L https://www.xpra.org/dists/stretch/main/binary-am
 # Install xpra, xephyr and xfce4
 RUN curl -sfL https://xpra.org/repos/buster/xpra.list | tee /etc/apt/sources.list.d/xpra-beta.list && \
 	curl -sfL https://xpra.org/gpg.asc | apt-key add - && \
-    apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    apt-get update --allow-releaseinfo-change && DEBIAN_FRONTEND=noninteractive apt-get install -y \
         xpra \
         xterm \
         xfce4 \
