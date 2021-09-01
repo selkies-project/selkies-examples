@@ -39,8 +39,8 @@ while IFS= read -r line; do
     done
 done < "clusters.txt"
 
-uniq cluster_region_zone_tmp.txt > cluster_region_zone.txt
+sort cluster_region_zone_tmp.txt | uniq > cluster_region_zone.txt
 rm -f cluster_region_zone_tmp.txt
 
 # Save list of zones to file
-echo $ZONES | tr ':' '\n' | uniq > zones.txt
+echo $ZONES | tr ':' '\n' | sort | uniq > zones.txt
