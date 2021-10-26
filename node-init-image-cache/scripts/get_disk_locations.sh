@@ -17,7 +17,7 @@
 EXCLUDE_REGIONS="$1"
 
 # Get all cluster name, regions and node pool urls (for zones)
-gcloud container clusters list -q --format='csv[no-heading](name,zone,instanceGroupUrls)' > clusters.txt
+gcloud container clusters list -q --filter='name~broker-' --format='csv[no-heading](name,zone,instanceGroupUrls)' > clusters.txt
 
 # Extract uniqe zones from all node pool urls.
 ZONES=""
