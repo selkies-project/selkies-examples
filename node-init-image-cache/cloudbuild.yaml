@@ -16,7 +16,7 @@ timeout: 7200s
 substitutions:
   _PROVISION_MACHINE_TYPE: e2-standard-8
   _IMAGE_BUILD_REGION: "us-central1"
-  _IMAGE_BUILD_ZONE: "us-central1-a"
+  _IMAGE_BUILD_ZONE: "none"
   _EXCLUDE_REGIONS: "none"
   _DISK_SIZE_GB: "256"
   _PULL_ALL_GCR: "true"
@@ -51,13 +51,17 @@ steps:
     args:
       - -exc
       - |
+        # Use a cluster zone for the image building if _IMAGE_BUILD_ZONE is not provided.
+        BUILD_ZONE=$(awk 'NR==1 {print; exit}' zones.txt)
+        if [[ "${_IMAGE_BUILD_ZONE}" != "none" ]]; then BUILD_ZONE=${_IMAGE_BUILD_ZONE}; fi
+        
         # Use the last image as a cached starting point if it's present.
         USE_LAST_IMAGE="true"
         CURR_IMAGE=$(gcloud compute images list -q --project ${PROJECT_ID} --filter='name~selkies-image-cache' --limit=1 --format='value(name)')
         if [[ -z "$${CURR_IMAGE}" ]]; then USE_LAST_IMAGE="false"; fi
 
         cd build/selkies-image-cache
-        gcloud builds submit --substitutions=_PROVISION_MACHINE_TYPE=${_PROVISION_MACHINE_TYPE},_PROVISION_REGION=${_IMAGE_BUILD_REGION},_PROVISION_ZONE=${_IMAGE_BUILD_ZONE},_DISK_SIZE_GB=${_DISK_SIZE_GB},_USE_LAST_IMAGE=$${USE_LAST_IMAGE},_PULL_ALL_GCR=${_PULL_ALL_GCR}
+        gcloud builds submit --substitutions=_PROVISION_MACHINE_TYPE=${_PROVISION_MACHINE_TYPE},_PROVISION_REGION=${_IMAGE_BUILD_REGION},_PROVISION_ZONE=$${BUILD_ZONE},_DISK_SIZE_GB=${_DISK_SIZE_GB},_USE_LAST_IMAGE=$${USE_LAST_IMAGE},_PULL_ALL_GCR=${_PULL_ALL_GCR}
   ###
   # Create cache disk for each zone.
   ###
