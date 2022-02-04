@@ -16,7 +16,7 @@ timeout: 7200s
 substitutions:
   _PROVISION_MACHINE_TYPE: e2-standard-8
   _IMAGE_BUILD_REGION: "us-central1"
-  _IMAGE_BUILD_ZONE: "us-central1-a"
+  _IMAGE_BUILD_ZONE: "none"
   _EXCLUDE_REGIONS: "none"
   _DISK_SIZE_GB: "256"
   _PULL_ALL_GCR: "true"
@@ -57,6 +57,11 @@ steps:
           echo "ERROR: _CRONJOB_REGION region: '${_CRONJOB_REGION}' not found in project, cannot deploy cache update CronJob"
           exit 1
         fi
+
+        # Use a cluster zone for the image building if _IMAGE_BUILD_ZONE is not provided.
+        BUILD_ZONE=$(awk 'NR==1 {print; exit}' zones.txt)
+        if [[ "${_IMAGE_BUILD_ZONE}" != "none" ]]; then BUILD_ZONE=${_IMAGE_BUILD_ZONE}; fi
+
         echo "Installing CronJob to cluster in region: ${_CRONJOB_REGION}"
         tar zcvf cache-update-cronjob/cloudbuild.tgz build manifests scripts cloudbuild.yaml
 
@@ -70,7 +75,7 @@ steps:
           sed -e 's/$${PROJECT_ID}/${PROJECT_ID}/g' \
               -e 's/$${_PROVISION_MACHINE_TYPE}/${_PROVISION_MACHINE_TYPE}/g' \
               -e 's/$${_IMAGE_BUILD_REGION}/${_IMAGE_BUILD_REGION}/g' \
-              -e 's/$${_IMAGE_BUILD_ZONE}/${_IMAGE_BUILD_ZONE}/g' \
+              -e 's/$${_IMAGE_BUILD_ZONE}/$${BUILD_ZONE}/g' \
               -e 's/$${_EXCLUDE_REGIONS}/${_EXCLUDE_REGIONS}/g' \
               -e 's/$${_DISK_SIZE_GB}/${_DISK_SIZE_GB}/g' \
               -e 's/$${_IMAGE_BUILD_SCHEDULE}/${_IMAGE_BUILD_SCHEDULE}/g' \
