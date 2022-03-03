@@ -48,7 +48,7 @@ kubectl delete cronjob -n pod-broker-system ${DISK_ZONE}-image-puller-subscripti
 
 sed -i -e 's/${ZONE}/'${DISK_ZONE}'/g' kustomization.yaml
 
-kubectl.1.17 kustomize | \
+kubectl kustomize | \
   sed \
     -e 's/${PROJECT_ID}/'${PROJECT_ID}'/g' \
     -e 's/${PD_NAME}/'${PD_NAME}'/g' \

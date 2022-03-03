@@ -71,7 +71,7 @@ steps:
         export CLOUDSDK_COMPUTE_REGION="$${cluster_toks[1]}"
         export CLOUDSDK_CONTAINER_CLUSTER="$${cluster_toks[0]}"
 
-        kubectl.1.17 kustomize cache-update-cronjob | \
+        kubectl kustomize cache-update-cronjob | \
           sed -e 's/$${PROJECT_ID}/${PROJECT_ID}/g' \
               -e 's/$${_PROVISION_MACHINE_TYPE}/${_PROVISION_MACHINE_TYPE}/g' \
               -e 's/$${_IMAGE_BUILD_REGION}/${_IMAGE_BUILD_REGION}/g' \
