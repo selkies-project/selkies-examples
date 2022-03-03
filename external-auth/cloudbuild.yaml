@@ -29,7 +29,7 @@ steps:
     args:
       - "-exc"
       - |
-        kubectl.1.17 kustomize manifests/ | \
+        kubectl kustomize manifests/ | \
           sed 's/$${PROJECT_ID}/'${PROJECT_ID}'/g' | \
           /builder/kubectl.bash apply -f -
         
