@@ -75,7 +75,7 @@ steps:
           sed -e 's/$${PROJECT_ID}/${PROJECT_ID}/g' \
               -e 's/$${_PROVISION_MACHINE_TYPE}/${_PROVISION_MACHINE_TYPE}/g' \
               -e 's/$${_IMAGE_BUILD_REGION}/${_IMAGE_BUILD_REGION}/g' \
-              -e 's/$${_IMAGE_BUILD_ZONE}/$${BUILD_ZONE}/g' \
+              -e 's/$${_IMAGE_BUILD_ZONE}/'$${BUILD_ZONE}'/g' \
               -e 's/$${_EXCLUDE_REGIONS}/${_EXCLUDE_REGIONS}/g' \
               -e 's/$${_DISK_SIZE_GB}/${_DISK_SIZE_GB}/g' \
               -e 's/$${_IMAGE_BUILD_SCHEDULE}/${_IMAGE_BUILD_SCHEDULE}/g' \
