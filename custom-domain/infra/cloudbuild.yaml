@@ -1,0 +1,24 @@
+timeout: 600s
+substitutions:
+  _ACTION: apply
+  _NAME: broker
+  _REGION:
+  _CUSTOM_DOMAIN:
+  _LB_DOMAINS:
+tags:
+  - custom-domain-infra
+steps:
+  ###
+  # Apply terraform to provision infrastructure
+  ###
+  - name: "gcr.io/${PROJECT_ID}/${_NAME}-installer"
+    id: "terraform-apply"
+    entrypoint: "/workspace/deploy.sh"
+    env:
+      - TF_VAR_project_id=${PROJECT_ID}
+      - TF_VAR_name=${_NAME}
+      - TF_VAR_region=${_REGION}
+      - TF_VAR_custom_domain=${_CUSTOM_DOMAIN}
+      - TF_VAR_lb_domains=${_LB_DOMAINS}
+      - TERRAFORM_WORKSPACE_NAME=${_NAME}-${_REGION}-custom-domain
+      - ACTION=${_ACTION}
