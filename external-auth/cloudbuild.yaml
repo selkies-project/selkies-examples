@@ -23,25 +23,27 @@ steps:
   ###
   # Deploy manifests to cluster.
   ###
-  - name: "gcr.io/cloud-builders/kubectl"
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
     id: deploy-manifests
     entrypoint: "bash"
     args:
       - "-exc"
       - |
+        gcloud container clusters get-credentials $${CLOUDSDK_CONTAINER_CLUSTER} --region=$${CLOUDSDK_COMPUTE_REGION}
+
         kubectl kustomize manifests/ | \
           sed 's/$${PROJECT_ID}/'${PROJECT_ID}'/g' | \
-          /builder/kubectl.bash apply -f -
+          kubectl apply -f -
         
         # Apply the policy
         [[ ! -f ${_POLICY} ]] && "ERROR: Policy file not found: ${_POLICY}" && exit 1
         kubectl -n opa create configmap selkies-opa-policy \
           --from-file policy.rego=${_POLICY} --dry-run -o yaml | \
           kubectl label -f- --dry-run -o yaml --local openpolicyagent.org/policy=rego | \
-          /builder/kubectl.bash apply -f -
+          kubectl apply -f -
 
         # Get policy status
-        STATUS=$(/builder/kubectl.bash get cm -n opa selkies-opa-policy -o jsonpath='{.metadata.annotations.openpolicyagent\.org/policy-status}')
+        STATUS=$(kubectl get cm -n opa selkies-opa-policy -o jsonpath='{.metadata.annotations.openpolicyagent\.org/policy-status}')
         STATUS_OK='{"status":"ok"}'
         [[ ! $${STATUS} == $${STATUS_OK} ]] && echo "ERROR: failed to apply policy" && exit 1
         echo "Policy applied"
