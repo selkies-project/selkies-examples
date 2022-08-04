@@ -29,15 +29,15 @@ spec:
         listener:
           filterChain:
             filter:
-              name: "envoy.http_connection_manager"
+              name: "envoy.filters.network.http_connection_manager"
               subFilter:
-                name: "envoy.router"
+                name: "envoy.filters.http.router"
       patch:
-        operation: INSERT_BEFORE
+        operation: INSERT_FIRST
         value:
           name: envoy.ext_authz
           typed_config:
-            "@type": "type.googleapis.com/envoy.config.filter.http.ext_authz.v2.ExtAuthz"
+            '@type': type.googleapis.com/envoy.config.filter.http.ext_authz.v2.ExtAuthz
             status_on_error:
               code: ServiceUnavailable
             
