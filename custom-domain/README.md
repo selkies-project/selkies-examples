@@ -106,7 +106,7 @@ From the selkies repo, re-deploy the manifests from the selkies repo, `setup/man
 ```bash
 cd PATH_TO_YOUR_SELKIES_REPO_DIR
 cd setup/manifests
-gcloud builds submit --project ${PROJECT_ID?}
+gcloud builds submit --project ${PROJECT_ID?} --substitutions=_REGION=${_REGION}
 ```
 
 ### Step 5: Reinstall PWAs (Optional)

@@ -37,7 +37,7 @@ export REGION=us-west1
 1. Create cloud filestore instance:
 
 ```bash
-(cd infra && gcloud builds submit --substitutions=_ZONE=${ZONE?})
+(cd infra && gcloud builds submit --substitutions=_LOCATION=${ZONE?})
 ```
 
 2. Deploy the manifests:

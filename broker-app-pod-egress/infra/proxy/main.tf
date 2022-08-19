@@ -21,7 +21,7 @@ data "google_compute_subnetwork" "broker" {
 }
 
 data "template_file" "cloud-config" {
-  template = "${file("${path.module}/config/cloudconfig.yaml")}"
+  template = file("${path.module}/config/cloudconfig.yaml")
   vars = {
     PROJECT              = var.project_id
     INTERNAL_NET_GATEWAY = data.google_compute_subnetwork.broker.gateway_address
@@ -41,7 +41,7 @@ resource "google_compute_instance_template" "proxy" {
   project      = var.project_id
   machine_type = var.machine_type
   labels       = {}
-  metadata     = map("user-data", data.template_file.cloud-config.rendered)
+  metadata     = tomap({ "user-data" = data.template_file.cloud-config.rendered })
   region       = var.region
   disk {
     source_image = "cos-cloud/cos-stable"
@@ -83,7 +83,7 @@ resource "google_compute_instance_template" "proxy" {
 
 module "mig" {
   source              = "terraform-google-modules/vm/google//modules/mig"
-  version             = "~> 2.1.0"
+  version             = "~> 7.8.0"
   project_id          = var.project_id
   instance_template   = google_compute_instance_template.proxy.self_link
   region              = var.region
@@ -132,7 +132,7 @@ resource "google_compute_firewall" "proxy" {
   target_tags = [local.proxy_name]
 
   # Allow traffic from regional CIDR and all secondary GKE ranges.
-  source_ranges = concat(list(data.google_compute_subnetwork.broker.ip_cidr_range), data.google_compute_subnetwork.broker.secondary_ip_range.*.ip_cidr_range)
+  source_ranges = concat(tolist([data.google_compute_subnetwork.broker.ip_cidr_range]), data.google_compute_subnetwork.broker.secondary_ip_range.*.ip_cidr_range)
 }
 
 resource "google_compute_forwarding_rule" "proxy" {

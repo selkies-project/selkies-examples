@@ -34,5 +34,5 @@ steps:
       - TF_VAR_name=${_NAME}
       - TF_VAR_region=${_REGION}
       - TF_VAR_mig_instance_count=${_INSTANCE_COUNT}
-      - TERRAFORM_WORKSPACE_NAME=broker-proxy-${_REGION}
+      - TERRAFORM_WORKSPACE_NAME=broker-proxy-instance-${_REGION}
       - ACTION=${_ACTION}
