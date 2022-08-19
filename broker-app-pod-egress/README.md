@@ -52,7 +52,7 @@ gcloud compute networks subnets update broker-${REGION} \
 3. Create the base infrastructure for the proxy instances:
 
 ```bash
-(cd infra && gcloud builds submit)
+(cd infra && gcloud builds submit --substitutions=_REGION=${REGION})
 ```
 
 4. Create the proxy instance in your desired region:

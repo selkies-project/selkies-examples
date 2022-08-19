@@ -37,10 +37,10 @@ resource "google_project_service" "filestore" {
 }
 
 resource "google_filestore_instance" "shared-storage" {
-  project = google_project_service.filestore.project
-  name = "${var.name}-shared-storage-${var.zone}"
-  zone = var.zone
-  tier = var.tier
+  project  = google_project_service.filestore.project
+  name     = "${var.name}-shared-storage-${var.location}"
+  location = var.location
+  tier     = var.tier
 
   file_shares {
     capacity_gb = var.capacity_gb

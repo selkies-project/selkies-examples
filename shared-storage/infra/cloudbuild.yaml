@@ -16,7 +16,7 @@ timeout: 3600s
 substitutions:
   _ACTION: apply
   _NAME: broker
-  _ZONE: us-west1-a
+  _LOCATION: us-west1-a
 
 steps:
   ###
@@ -28,7 +28,7 @@ steps:
     env:
       - TF_VAR_project_id=${PROJECT_ID}
       - TF_VAR_name=${_NAME}
-      - TF_VAR_zone=${_ZONE}
+      - TF_VAR_location=${_LOCATION}
       - TERRAFORM_WORKSPACE_NAME=broker-filestore
       - ACTION=${_ACTION}
       

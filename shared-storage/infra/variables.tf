@@ -24,8 +24,9 @@ variable "region" {
   default = "us-west1"
 }
 
-variable "zone" {
-  default = "us-west1-a"
+variable "location" {
+  default     = "us-west1-a"
+  description = "The name of the location of the instance. This can be a region for ENTERPRISE tier instances or a zone for other tiers."
 }
 
 variable "tier" {
