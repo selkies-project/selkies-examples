@@ -185,10 +185,6 @@ spec:
     - namespaceSelector: 
         matchLabels:
           install.operator.istio.io/owner-kind: IstioControlPlane
-  egress: 
-  - to: 
-    - namespaceSelector: {}
   podSelector: {}
   policyTypes:
   - Ingress
-  - Egress
