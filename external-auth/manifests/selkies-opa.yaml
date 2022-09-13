@@ -19,9 +19,12 @@
 apiVersion: networking.istio.io/v1alpha3
 kind: EnvoyFilter
 metadata:
-  namespace: istio-system
   name: ext-authz
+  namespace: istio-system
 spec:
+  workloadSelector:
+    labels:
+      istio: ingressgateway
   configPatches:
     - applyTo: HTTP_FILTER
       match:
@@ -29,25 +32,21 @@ spec:
         listener:
           filterChain:
             filter:
-              name: "envoy.http_connection_manager"
+              name: "envoy.filters.network.http_connection_manager"
               subFilter:
-                name: "envoy.router"
+                name: "envoy.filters.http.router"
       patch:
         operation: INSERT_BEFORE
         value:
           name: envoy.ext_authz
           typed_config:
-            "@type": "type.googleapis.com/envoy.config.filter.http.ext_authz.v2.ExtAuthz"
+            '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+            transport_api_version: V3
             status_on_error:
               code: ServiceUnavailable
-            
-            # Request body can break if binary data is sent, wait for newer Envoy proxy with fix before enabling.
-            # Until then, only header based auth is possible.
-            #    GH Issue: https://github.com/envoyproxy/envoy/issues/9822
-            #with_request_body:
-            #  max_request_bytes: 8192
-            #  allow_partial_message: true
-            
+            # with_request_body:
+            #   max_request_bytes: 8192
+            #   allow_partial_message: true
             grpc_service:
               # NOTE(tsandall): when this was tested with the envoy_grpc client the gRPC
               # server was receiving check requests over HTTP 1.1. The gRPC server in
@@ -57,7 +56,6 @@ spec:
               google_grpc:
                 target_uri: opa.opa.svc.cluster.local:9191
                 stat_prefix: "ext_authz"
-              timeout: 5s
 ---
 ###
 # Configuration for opa-istio container to enable OPA envoy plugin.
@@ -65,8 +63,8 @@ spec:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  namespace: opa
   name: opa-istio-config
+  namespace: opa
 data:
   config.yaml: |
     plugins:
@@ -128,7 +126,7 @@ spec:
   selector:
     app: opa
   ports:
-    - name: http-opa-istio
+    - name: http2-opa-istio
       port: 9191
       targetPort: 9191
 ---
@@ -155,11 +153,12 @@ spec:
           defaultMode: 420
       containers:
       - name: opa
-        image: openpolicyagent/opa:0.28.0-istio
+        image: openpolicyagent/opa:0.43.0-istio
         args:
         - "run"
         - "--server"
         - "--config-file=/config/config.yaml"
+        - "--log-level=debug"
         - "--addr=localhost:8181"
         - "--diagnostic-addr=0.0.0.0:8282"
         ports:
@@ -172,3 +171,20 @@ spec:
         image: openpolicyagent/kube-mgmt:0.12.1
         args:
           - --enable-data
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  labels:
+    app.kubernetes.io/name: broker
+  name: allow-istio
+  namespace: opa
+spec:
+  ingress:
+  - from:
+    - namespaceSelector: 
+        matchLabels:
+          install.operator.istio.io/owner-kind: IstioControlPlane
+  podSelector: {}
+  policyTypes:
+  - Ingress
